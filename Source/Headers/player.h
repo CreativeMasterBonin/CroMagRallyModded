@@ -294,6 +294,7 @@ short FindClosestPlayer(ObjNode *thePlayer, float x, float z, float range, Boole
 short FindClosestPlayerInBack(ObjNode *theNode, float range, Boolean allowCPUCars, float *dist, float angle);
 short FindClosestPlayerInFront(ObjNode *theNode, float range, Boolean allowCPUCars, float *dist, float angle);
 void PlayerLoseHealth(short p, float damage);
+void SetInvisibility(short playerNum); // mod: add invisible pow timer changer
 void SetStickyTires(short playerNum);
 void SetSuspensionPOW(short playerNum);
 void SetCarStatusBits(short	playerNum, uint32_t bits);

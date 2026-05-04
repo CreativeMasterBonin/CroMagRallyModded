@@ -180,6 +180,17 @@ typedef enum LocStrID
 	STR_MSAA_4X,
 	STR_MSAA_8X,
     STR_NIGHTMODE,
+	STR_SILENCE_ANOUNNCER, // silence announcer setting
+	STR_CUSTOM_OPTION, // a custom option title if a name cannot be provided for it
+	STR_CUSTOM_POWERUP, // a custom powerup title if a name cannot be provided for it
+	STR_CUSTOM_MAP, // a custom map title if a name cannot be provided for it
+	STR_ZAPPER, // the cpu zapping powerup from arrowhead tokens in non-tournament mode
+	STR_WHIRLWIND, // custom powerup that shoots 'dust devils' or 'tornados' or 'whirlwinds' as they are called here and there
+	STR_BEAM, // custom powerup that fires 'electric beams' at cpus from player pos
+	STR_SUPER_SUB_MODE, // player plays as a sub in normal tracks, with custom rules and checks for items
+	STR_CPUS_USE_SUBS, // cpus can use subs in normal tracks
+	STR_DEBUG_MODE, // modded debug mode with many useful features
+	STR_MOD, // mod options title
 	STR_PREFERRED_DISPLAY,
 	STR_DISPLAY,
 	STR_ANTIALIASING_CHANGE_WARNING,

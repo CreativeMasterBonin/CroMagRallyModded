@@ -159,10 +159,13 @@ void InitDefaultPrefs(void)
 	gGamePrefs.splitScreenMode3P	= SPLITSCREEN_MODE_3P_TALL;
 	gGamePrefs.monitorNum			= 0;			// main monitor by default
 	gGamePrefs.fullscreen			= true;
-    gGamePrefs.nightMode = false;
+    gGamePrefs.nightMode 			= false; // night mode should not be enabled by default
 	gGamePrefs.tagDuration 			= 3;
 	gGamePrefs.musicVolumePercent	= 60;			// careful to set these two volumes to one of the
 	gGamePrefs.sfxVolumePercent		= 60;			// the predefined values allowed in the settings menu
+	gGamePrefs.silenceAnnouncer 	= false; // unsilence the announcer for new settings
+	gGamePrefs.superSubMode			= false; // super sub mode is off by default
+	gGamePrefs.cpusAreSubs			= false; // cpus should not be subs normally
 
 	memcpy(&gGamePrefs.bindings, kDefaultInputBindings, sizeof(kDefaultInputBindings));
 }
@@ -1129,6 +1132,13 @@ void MoveEverything(void)
 		case	TRACK_NUM_RAMPS:
 				MakeSnow();
 				break;
+		case TRACK_NUM_DESERT: // deserts get cold at night
+			if(gGamePrefs.nightMode){
+				MakeSnow();
+			}
+			else{
+				break;
+			}
 
 	}
 }
@@ -1274,6 +1284,18 @@ short				numPanes;
                 viewDef.styles.fogEnd            = viewDef.camera.yon;
             }
             break;
+		case TRACK_NUM_DESERT:
+			if(gGamePrefs.nightMode == true){
+				viewDef.styles.useFog            = true; // ? was false
+				viewDef.styles.fogStart            = viewDef.camera.yon * .55f; // was .1f
+				viewDef.styles.fogEnd            = viewDef.camera.yon * 0.82f; // was nothing
+			}
+			else{
+				viewDef.styles.useFog            = false;
+				viewDef.styles.fogStart            = viewDef.camera.yon * .1f;
+				viewDef.styles.fogEnd            = viewDef.camera.yon;
+			}
+			break;
         default:
             viewDef.styles.useFog            = false;
             viewDef.styles.fogStart            = viewDef.camera.yon * .1f;
@@ -1373,7 +1395,35 @@ short				numPanes;
                 viewDef.lights.fillColor[1]            = gFillColor2;
             }
             break;
+		case    TRACK_NUM_DESERT:
+			if(gGamePrefs.nightMode == true){
+				viewDef.lights.numFillLights         = 1;
+				// deserts get cold at night, so slightly blue-ish
+				viewDef.lights.ambientColor.r         = 0.3;
+				viewDef.lights.ambientColor.g         = 0.3;
+				viewDef.lights.ambientColor.b         = 0.32;
+				viewDef.lights.fillDirection[0].x     = 1.0;
+				viewDef.lights.fillDirection[0].y     = -.1;
+				viewDef.lights.fillDirection[0].z     = 1.0;
+				viewDef.lights.fillColor[0].r         = 0.98;
+				viewDef.lights.fillColor[0].g         = 0.95;
+				viewDef.lights.fillColor[0].b         = 1.0;
+			}
+			else{
+				viewDef.lights.numFillLights         = 1;
+				OGLVector3D_Normalize(&gWorldSunDirection,&gWorldSunDirection);
 
+				viewDef.lights.ambientColor.r         = .6;
+				viewDef.lights.ambientColor.g         = .6;
+				viewDef.lights.ambientColor.b         = .6;
+				viewDef.lights.fillDirection[0]     = gWorldSunDirection;
+				viewDef.lights.fillColor[0]         = gFillColor1;
+				viewDef.lights.fillDirection[1].x     = -gWorldSunDirection.x;
+				viewDef.lights.fillDirection[1].y     = gWorldSunDirection.y;
+				viewDef.lights.fillDirection[1].z     = -gWorldSunDirection.z;
+				viewDef.lights.fillColor[1]            = gFillColor2;
+			}
+			break;
 		default:
 				viewDef.lights.numFillLights 		= 1;
 				OGLVector3D_Normalize(&gWorldSunDirection,&gWorldSunDirection);
@@ -1398,9 +1448,16 @@ short				numPanes;
 	{
 
 		case		TRACK_NUM_DESERT:
-					viewDef.view.clearColor.r = 153.0/255.0;
-					viewDef.view.clearColor.g = 171.0/255.0;
-					viewDef.view.clearColor.b = 237.0/255.0;
+						if(gGamePrefs.nightMode == true){
+							viewDef.view.clearColor.r = 22.0/255.0;
+							viewDef.view.clearColor.g = 4.0/255.0;
+							viewDef.view.clearColor.b = 46.0/255.0;
+						}
+						else{
+							viewDef.view.clearColor.r = 153.0/255.0;
+							viewDef.view.clearColor.g = 171.0/255.0;
+							viewDef.view.clearColor.b = 237.0/255.0;
+						}
 					break;
 
 		case		TRACK_NUM_JUNGLE:

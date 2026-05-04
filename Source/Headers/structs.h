@@ -334,6 +334,8 @@ struct ObjNode
 	short				EffectChannel;			// effect sound channel index (-1 = none)
 	short				ParticleGroup;
 	uint32_t			ParticleMagicNum;
+	
+	uint32_t			totalCount;						// the id of this object
 
 	OGLColorRGBA		ColorFilter;
 };
@@ -361,4 +363,5 @@ typedef struct
     float offsetX;
     float offsetY;
     float offsetZ;
+	int numID;
 }NewObjectDefinitionType;

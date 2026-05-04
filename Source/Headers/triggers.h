@@ -44,7 +44,13 @@ enum
 	POW_TYPE_TORPEDO,
 	POW_TYPE_FREEZE,
 	POW_TYPE_MINE,
-    POW_TYPE_ZAPPER,
+    POW_TYPE_ZAPPER, // implemented using token map item in non-tournament mode
+	POW_TYPE_WHIRLWIND, // not implemented yet (the desert spinning wind)
+	POW_TYPE_BEAM, // not implemented yet (the statue zappy thing beam)
+	POW_TYPE_INVISIBILITY, // invisibility has no respawnable form so here it is
+	POW_TYPE_SUPER_SUSPENSION, // super suspension has no respawnable form so here it is
+	POW_TYPE_STICKY_TIRES, // sticky tires has no respawnable form so here it is
+	POW_TYPE_CUSTOM, // unused slot
 
 	MAX_POW_TYPES
 };

@@ -62,8 +62,23 @@ static int ShouldDisplayMonitorCycler(const MenuItem* mi)
 	return (GetNumDisplays() <= 1) ? kMILayoutFlagHidden : 0;
 }
 
+// this is called when night mode is toggled in the menu
 static void OnToggleNightMode(const MenuItem* mi){
     //SetFullscreenMode(true);
+}
+
+// this is called when silence announcer is toggled in the menu
+static void OnChangeSilenceAnnouncer(const MenuItem* mi){
+	if(gGamePrefs.silenceAnnouncer){
+		PlayEffect(EFFECT_COSTYA);
+	}
+	else{
+		
+	}
+}
+// this should only be called by settings where nothing should happen after being changed
+static void OnChangeSettingNOP(const MenuItem* mi){
+	// ???
 }
 
 static void OnChangeMSAA(const MenuItem* mi)
@@ -113,6 +128,29 @@ const MenuItem gSettingsMenuTree[] =
 	{kMIPick, STR_SOUND, .next='soun'},
 	{kMIPick, STR_GRAPHICS, .next='graf'},
 	{kMIPick, STR_LANGUAGE, .next='lang'},
+	{kMIPick, STR_MOD, .next='modd'}, // the modded menu option is shown on the settings screen (this screen)
+	
+	// mod menu area
+	{.id='modd'},
+	{
+		kMICycler1, STR_SUPER_SUB_MODE,
+		.callback=OnChangeSettingNOP,
+		.cycler=
+		{
+			.valuePtr=&gGamePrefs.superSubMode,
+			.choices={ {STR_OFF, 0}, {STR_ON, 1} },
+		},
+	},
+	{
+		kMICycler1, STR_CPUS_USE_SUBS,
+		.callback=OnChangeSettingNOP,
+		.cycler=
+		{
+			.valuePtr=&gGamePrefs.cpusAreSubs,
+			.choices={ {STR_OFF, 0}, {STR_ON, 1} },
+		},
+	},
+	// back to normal settings
 
 	{.id='ctrl'},
 	{kMIPick, STR_CONFIGURE_KEYBOARD, .next='keyb' },
@@ -151,6 +189,17 @@ const MenuItem gSettingsMenuTree[] =
 				{STR_VOLUME_080, 80},
 				{STR_VOLUME_100, 100},
 			}
+		},
+	},
+	// silence the announcer setting (makes ALL announcer sounds get skipped if they are distracting or annoying)
+	// THATS GONNA COST YA
+	{
+		kMICycler1, STR_SILENCE_ANOUNNCER,
+		.callback=OnChangeSilenceAnnouncer,
+		.cycler=
+		{
+			.valuePtr=&gGamePrefs.silenceAnnouncer,
+			.choices={ {STR_OFF, 0}, {STR_ON, 1} },
 		},
 	},
 

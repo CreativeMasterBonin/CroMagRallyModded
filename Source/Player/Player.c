@@ -160,10 +160,12 @@ int		i,j,type;
 Boolean	taken[NUM_LAND_CAR_TYPES];
 
 	gWorstHumanPlace = 0;
-    
+    // give each player a unique id so that they can be recognized later
     for(i = 0; i < gNumTotalPlayers; i++){
         gPlayerInfo[i].playerID = i;
     }
+	
+	super_sub_mode = gGamePrefs.superSubMode; // repetitive, but not changing lower code
 
 
 		/* FIRST MARK WHICH CAR TYPES THE HUMANS HAVE */
@@ -188,6 +190,8 @@ Boolean	taken[NUM_LAND_CAR_TYPES];
 
 			/* SET SOME GLOBALS */
 
+	float multiplierForPosXZ = 1.0;
+	
 	for (i = 0; i < gNumTotalPlayers; i++)
 	{
         // mod: set CPU vehicle types per difficulty
@@ -197,16 +201,20 @@ Boolean	taken[NUM_LAND_CAR_TYPES];
             
             if (gGamePrefs.difficulty == DIFFICULTY_HARD){
                 gPlayerInfo[i].vehicleType = RandomRange(6, type); // duplicate cars
+				// even more fun, make the cpus check if the first player has a chariot, and if so, take the advantage and copy it-ish
+				if(gPlayerInfo[0].vehicleType == CAR_TYPE_CHARIOT){
+					gPlayerInfo[i].vehicleType = RandomRange(CAR_TYPE_CATAPULT,CAR_TYPE_CHARIOT);
+				}
                 // modify the CPU's cars to be more fun
-                gPlayerInfo[i].carStats.acceleration += RandomRange(7,15);
-                gPlayerInfo[i].carStats.maxSpeed += RandomRange(11,32);
-                gPlayerInfo[i].carStats.suspension += RandomRange(2,5);
-                gPlayerInfo[i].carStats.tireTraction += RandomRange(3,11);
+                gPlayerInfo[i].carStats.acceleration += RandomRange(17,35);
+                gPlayerInfo[i].carStats.maxSpeed += RandomRange(20,36);
+                gPlayerInfo[i].carStats.suspension += RandomRange(10,15);
+                gPlayerInfo[i].carStats.tireTraction += RandomRange(14,27);
             }
             else if(gGamePrefs.difficulty == DIFFICULTY_MEDIUM){
                 gPlayerInfo[i].vehicleType = RandomRange(3, type); // only level 3+ cars allowed
-                gPlayerInfo[i].carStats.suspension += RandomRange(2,5);
-                gPlayerInfo[i].carStats.tireTraction += RandomRange(3,11);
+                gPlayerInfo[i].carStats.suspension += RandomRange(20,50);
+                gPlayerInfo[i].carStats.tireTraction += RandomRange(27,39);
             }
             else if(gGamePrefs.difficulty == DIFFICULTY_EASY){
                 gPlayerInfo[i].vehicleType = RandomRange(0, 5); // only simplistic to level 5 cars allowed
@@ -221,6 +229,13 @@ Boolean	taken[NUM_LAND_CAR_TYPES];
 				gPlayerInfo[i].vehicleType = type--;
 			}
 		}
+		
+		// correct positioning for extra players that do not have a default starting position in the map
+		if(gPlayerInfo[i].playerID >= 6 && gPlayerInfo[i].isComputer){
+			gPlayerInfo[i].coord.x = gPlayerInfo[0].startX - (100 * multiplierForPosXZ); // each new player should be offset by an amount
+			gPlayerInfo[i].coord.z = gPlayerInfo[0].startZ - (100 * multiplierForPosXZ); // otherwise they stack in the same position (which is automatically corrected anyways, but this is better than nothing)
+		}
+		multiplierForPosXZ += 1.27351f; // update multiplier after the player check
 
 		gPlayerInfo[i].coord.y = GetTerrainY(gPlayerInfo[i].startX,gPlayerInfo[i].startX);
 
@@ -230,19 +245,29 @@ Boolean	taken[NUM_LAND_CAR_TYPES];
 			InitPlayer_Submarine(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
 		else
             //InitPlayer_Car(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
-            // joke lolz
+            /* SUPER SUB MODE CHECK INITIALIZE */
             if(!gIsSelfRunningDemo){
                 if(super_sub_mode){
                     if(!gPlayerInfo[i].isComputer){
                         InitPlayer_Submarine(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
                         gPlayerInfo[i].vehicleType = CAR_TYPE_SUB;
                     }
-                    else{
-                        InitPlayer_Car(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
+                    else{ // it is super sub mode. can cpus be subs?
+						if(gGamePrefs.cpusAreSubs){
+							InitPlayer_Submarine(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
+						}
+						else{
+							InitPlayer_Car(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
+						}
                     }
                 }
-                else{
-                    InitPlayer_Car(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
+                else{// not super sub mode, but can cpus can be subs?
+					if(gGamePrefs.cpusAreSubs){
+						InitPlayer_Submarine(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
+					}
+					else{
+						InitPlayer_Car(i, &gPlayerInfo[i].coord, gPlayerInfo[i].startRotY);
+					}
                 }
             }
             else{
@@ -747,6 +772,19 @@ void PlayerLoseHealth(short p, float damage)
 }
 
 #pragma mark -
+
+
+/******************** SET INVISIBILITY*************************/
+
+void SetInvisibility(short playerNum)
+{
+	if(gPlayerInfo[playerNum].invisibilityTimer <= 0.0f){
+		gPlayerInfo[playerNum].invisibilityTimer = RandomRange(10,30);                // set duration of invisibility
+	}
+	else{
+		gPlayerInfo[playerNum].invisibilityTimer += 2.0;
+	}
+}
 
 /******************** SET STICKY TIRES *************************/
 

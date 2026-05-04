@@ -98,8 +98,49 @@ short	playerNum = theNode->PlayerNum;
 
 }
 
+// burns all players that are not the thrower
+// removes burn time left if player is the one who used the firey power
+void BurnPlayers(int playerNum){
+	for(int curplay = 0; curplay < gNumTotalPlayers; curplay++){
+		if(gPlayerInfo[curplay].playerID != gPlayerInfo[playerNum].playerID){
+			if(gPlayerInfo[curplay].flamingTimer <= 0.0f){
+				gPlayerInfo[curplay].flamingTimer = 10.0f;
+				gPlayerInfo[curplay].braking = true;
+				gPlayerInfo[curplay].gasPedalDown = false;
+				if(!gPlayerInfo[curplay].isComputer && !gPlayerInfo[curplay].onThisMachine){
+					PlayAnnouncerSound(EFFECT_COSTYA,false,0.5);
+				}
+			}
+		}
+		else{
+			DecCurrentPOWQuantity(curplay);
+			if(gPlayerInfo[curplay].onThisMachine){
+				PlayAnnouncerSound(EFFECT_NICESHOT,false,0.5);
+				PlayEffect3D(EFFECT_BOOM,&gPlayerInfo[playerNum].objNode->Coord);
+			}
+			if(gPlayerInfo[curplay].flamingTimer > 0.0f){
+				gPlayerInfo[curplay].flamingTimer = 0.0f;
+			}
+		}
+	}
+}
+
+// this is used for items which do not do anything or are invalid
+// removes the item from the player that used it
+void NoActionItem(int playerNum){
+	for(int curplay = 0; curplay < gNumTotalPlayers; curplay++){
+		if(gPlayerInfo[curplay].playerID != gPlayerInfo[playerNum].playerID){
+			// nop
+		}
+		else{
+			DecCurrentPOWQuantity(playerNum);
+		}
+	}
+}
+
 // zap weapon
-void ZapPlayers(playerNum){
+// removes zap time and grants a time of nitro boost if player is the one who used the powerup
+void ZapPlayers(int playerNum){
     for(int curplay = 0; curplay < gNumTotalPlayers; curplay++){
         if(gPlayerInfo[curplay].playerID != gPlayerInfo[playerNum].playerID){
             if(gPlayerInfo[curplay].canBeZapped == true){
@@ -159,6 +200,15 @@ short		powType;
 			/* PROCESS POWERUP TYPE */
 
 	powType = gPlayerInfo[playerNum].powType;			// get current weapon type
+	
+	if(gPlayerInfo[playerNum].isComputer && gPlayerInfo[playerNum].vehicleType == CAR_TYPE_SUB){
+		if(gTrackNum != TRACK_NUM_ATLANTIS){
+			PlayerLaunchBottleRocket(playerNum, forwardThrow);
+			PlayerLaunchRomanCandle(playerNum);
+			PlayerLaunchTorpedo(playerNum);
+			return;
+		}
+	}
 
 	switch(powType)
 	{
@@ -201,14 +251,63 @@ short		powType;
             
         case    POW_TYPE_ZAPPER:
                 ZapPlayers(playerNum);
-                break;
-
+			
+			if(gPlayerInfo[playerNum].powQuantity < 0)
+				gPlayerInfo[playerNum].powQuantity = 0;
+			break;
+		
+		case 	POW_TYPE_WHIRLWIND:
+				NoActionItem(playerNum);
+			if(gPlayerInfo[playerNum].powQuantity < 0)
+				gPlayerInfo[playerNum].powQuantity = 0;
+			break;
+		
+		case 	POW_TYPE_BEAM:
+				NoActionItem(playerNum);
+			if(gPlayerInfo[playerNum].powQuantity < 0)
+				gPlayerInfo[playerNum].powQuantity = 0;
+			break;
+		case 	POW_TYPE_INVISIBILITY:
+			if (gPlayerInfo[playerNum].invisibilityTimer <= 0.0f)
+				if (gPlayerInfo[playerNum].onThisMachine && (!gPlayerInfo[playerNum].isComputer))
+					PlayAnnouncerSound(EFFECT_POW_INVISIBILITY,false, .5);
+			
+			SetInvisibility(playerNum);
+			NoActionItem(playerNum);
+			
+			if(gPlayerInfo[playerNum].powQuantity < 0)
+				gPlayerInfo[playerNum].powQuantity = 0;
+			break;
+		case 	POW_TYPE_STICKY_TIRES:
+			if (gPlayerInfo[playerNum].stickyTiresTimer <= 0.0f)
+				if (gPlayerInfo[playerNum].onThisMachine && (!gPlayerInfo[playerNum].isComputer))
+					PlayAnnouncerSound(EFFECT_POW_STICKYTIRES,false, .5);
+			
+			SetStickyTires(playerNum);
+			NoActionItem(playerNum);
+			if(gPlayerInfo[playerNum].powQuantity < 0)
+				gPlayerInfo[playerNum].powQuantity = 0;
+			break;
+		case 	POW_TYPE_SUPER_SUSPENSION:
+			if (gPlayerInfo[playerNum].superSuspensionTimer <= 0.0f)
+				if (gPlayerInfo[playerNum].onThisMachine && (!gPlayerInfo[playerNum].isComputer))
+					PlayAnnouncerSound(EFFECT_POW_SUSPENSION,false, .5);
+			
+			SetSuspensionPOW(playerNum);
+			NoActionItem(playerNum);
+			if(gPlayerInfo[playerNum].powQuantity < 0)
+				gPlayerInfo[playerNum].powQuantity = 0;
+			break;
+		case 	POW_TYPE_CUSTOM:
+			NoActionItem(playerNum);
+				break;
 		default:
-            if(_DEBUG){
-                printf("Unknown powType detected. Skipping!");
-            }
-                break;
-				//DoFatalAlert("VehicleActivatePOW: unknown powType");
+			// instead of outright crashing, just report and skip the powerup and continue
+			if(gDebugMode > 0){
+				printf("Unknown powType: %u detected. Skipping!\n",powType);
+			}
+			break;
+			//DoFatalAlert("VehicleActivatePOW: unknown powType");
 	}
 }
 
@@ -268,10 +367,9 @@ static void PlayerThrowsWeapon(short playerNum, Boolean forwardThrow)
     bool unsafe = false;
 
     if(pinfo[playerNum].vehicleType == CAR_TYPE_SUB){
-        if(_DEBUG){
-            printf("Unsafe action. Is this vehicle a sub? ");
-        }
+		printf("Cannot do throwing animation on subs. \n");
         unsafe = true;
+		return;
     }
     
     if(unsafe == false){
@@ -1683,8 +1781,10 @@ static const OGLPoint3D	nose = {0,0,-100};
     if(gTrackNum == TRACK_NUM_ATLANTIS){
         PlayEffect_Parms3D(EFFECT_TORPEDOFIRE, &def.coord, NORMAL_CHANNEL_RATE, 3);
     }
-    else{
-        PlayEffect_Parms3D(EFFECT_OHYEAH, &def.coord, NORMAL_CHANNEL_RATE, 3);
+    else{ // this is considered an announcer sound so it respects the silence setting
+		if(!gGamePrefs.silenceAnnouncer){
+			PlayEffect_Parms3D(EFFECT_OHYEAH, &def.coord, NORMAL_CHANNEL_RATE, 3);
+		}
     }
 }
 

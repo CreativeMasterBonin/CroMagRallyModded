@@ -4,7 +4,7 @@
 
 #pragma once
 
-#define	MAX_PLAYERS			6 // 6 players for stability, or more for experiments
+#define	MAX_PLAYERS			8 // 6 players for stability, or more for experiments
 #define	MAX_LOCAL_PLAYERS	4
 
 #define	GAME_FOV		1.1f

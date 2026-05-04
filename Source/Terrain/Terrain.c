@@ -802,6 +802,9 @@ uint32_t			pictRowBytes;
         else if(gTrackNum == TRACK_NUM_ATLANTIS){
             lightShadedTerrain = true;
         }
+		else if(gTrackNum == TRACK_NUM_DESERT){
+			lightShadedTerrain = true;
+		}
         else{
             lightShadedTerrain = false;
         }

@@ -341,7 +341,7 @@ OGLPoint3D				*nubs;
 	};
     
     if(gGamePrefs.nightMode == true){
-        if(gTrackNum == TRACK_NUM_ICE || gTrackNum == TRACK_NUM_EGYPT || gTrackNum == TRACK_NUM_ATLANTIS){
+        if(gTrackNum == TRACK_NUM_ICE || gTrackNum == TRACK_NUM_EGYPT || gTrackNum == TRACK_NUM_ATLANTIS || gTrackNum == TRACK_NUM_DESERT){
             def.flags = STATUS_BIT_KEEPBACKFACES;
         }
     }
@@ -664,6 +664,17 @@ float			oldX,oldZ,newX,newZ;
 	newZ = gCoord.z;
 	radius = theNode->BoundingSphereRadius;
 
+	// dont do fence collisions if in super sub mode
+	if(gPlayerInfo[gCurrentPlayerNum].isComputer && gTrackNum != TRACK_NUM_ATLANTIS){
+		if(gGamePrefs.cpusAreSubs){
+			return;
+		}
+	}
+	else if(!gPlayerInfo[gCurrentPlayerNum].isComputer && gTrackNum != TRACK_NUM_ATLANTIS){
+		if(gGamePrefs.superSubMode){
+			return;
+		}
+	}
 
 
 			/****************************************/

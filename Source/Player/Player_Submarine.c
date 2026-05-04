@@ -38,7 +38,7 @@ static void AlignPropellerOnSubmarine(ObjNode *theCar);
 
 #define	DELTA_SUBDIV			40.0f
 
-#define	SUB_MAX_Y				16000.0f // 6000.0f
+#define	SUB_MAX_Y				32000.0f // 6000.0f
 
 #define	SUBMARINE_FRICTION		3000.0f
 
@@ -243,7 +243,15 @@ OGLVector3D		aimVec;
 		/* GET AIM VECTOR */
 
 	OGLMatrix4x4_SetRotate_X(&mx, theNode->Rot.x);
-	OGLMatrix4x4_SetRotate_Y(&my, theNode->Rot.y);
+	if(gPlayerInfo[playerNum].isComputer){
+		if(gTrackNum != TRACK_NUM_ATLANTIS)
+			OGLMatrix4x4_SetRotate_Y(&my, theNode->Rot.y);
+		else
+			OGLMatrix4x4_SetRotate_Y(&my, theNode->Rot.y);
+	}
+	else{
+		OGLMatrix4x4_SetRotate_Y(&my, theNode->Rot.y);
+	}
 	OGLMatrix4x4_Multiply(&mx,&my, &mxy);
 	OGLVector3D_Transform(&v, &mxy, &aimVec);
 	FastNormalizeVector(aimVec.x, aimVec.y, aimVec.z, &aimVec);
@@ -258,25 +266,70 @@ OGLVector3D		aimVec;
 	}
 	else
 	{
-        float	maxSpeed = (gPlayerInfo[playerNum].carStats.maxSpeed + gPlayerInfo[playerNum].submarineAdditionalSpeed) + ((float)gPlayerInfo[playerNum].place * 100.0f);
-
-        if (gPlayerInfo[playerNum].nitroTimer > 0.0f){// see if give nitro boost
-            if(gTrackNum == TRACK_NUM_ATLANTIS){
-                maxSpeed *= 1.4f;
-            }
-            else if(gTrackNum != TRACK_NUM_ATLANTIS){
-                maxSpeed *= 1.9f;
-            }
-        }
+        float maxSpeed = (gPlayerInfo[playerNum].carStats.maxSpeed + gPlayerInfo[playerNum].submarineAdditionalSpeed) + ((float)gPlayerInfo[playerNum].place * 200.0f) + 7310.0f;
+		
+		if(gPlayerInfo[playerNum].nitroTimer > 0.0f){
+			maxSpeed += gPlayerInfo[playerNum].superSuspensionTimer * 2.0f;
+		}
+		
+		if(gPlayerInfo[playerNum].zappedTimer > 0.0f){
+			gPlayerInfo[playerNum].submarineAdditionalSpeed -= 2007.0f;
+			gPlayerInfo[playerNum].gasPedalDown = false;
+			gPlayerInfo[playerNum].braking = true;
+			ApplyFrictionToDeltas(SUBMARINE_FRICTION * fps, &gDelta);
+		}
+		
+		if (gPlayerInfo[playerNum].nitroTimer > 0.0f){// see if give nitro boost
+			if(gTrackNum == TRACK_NUM_ATLANTIS){
+				maxSpeed *= 1.4f;
+			}
+			if(!gPlayerInfo[playerNum].isComputer){
+				if(gTrackNum != TRACK_NUM_ATLANTIS){
+					maxSpeed *= 1.971f;
+				}
+			}
+		}
 
 		gPlayerInfo[playerNum].currentRPM += fps * gPlayerInfo[playerNum].carStats.acceleration;		// store sub speed in RPM variable
         
+		// current max rpm changed for player vs the cpu
 		if (gPlayerInfo[playerNum].currentRPM > maxSpeed)
-			gPlayerInfo[playerNum].currentRPM = maxSpeed;
-
-		gDelta.x = aimVec.x * gPlayerInfo[playerNum].currentRPM;
-		gDelta.y = aimVec.y * gPlayerInfo[playerNum].currentRPM;
-		gDelta.z = aimVec.z * gPlayerInfo[playerNum].currentRPM;
+		{
+			// sticky tires is considered like a 'better gearing ratio with more torque' powerup here
+			if(gPlayerInfo[playerNum].isComputer){
+				gPlayerInfo[playerNum].currentRPM = maxSpeed;
+			}
+			else{
+				gPlayerInfo[playerNum].currentRPM = (maxSpeed + (gPlayerInfo[playerNum].stickyTiresTimer * 20.0f) + (gPlayerInfo[playerNum].superSuspensionTimer * 20.0f));
+			}
+		}
+		
+		float extraBuff = 250.0f;
+		
+		if(gTrackNum != TRACK_NUM_ATLANTIS){
+			if(gPlayerInfo[playerNum].isComputer){
+				if(gPlayerInfo[0].nitroTimer > 0.0f){
+					gDelta.x = aimVec.x * gPlayerInfo[playerNum].currentRPM * 1.67f + extraBuff;
+					gDelta.y = aimVec.y * gPlayerInfo[playerNum].currentRPM * 1.67f + extraBuff;
+					gDelta.z = aimVec.z * gPlayerInfo[playerNum].currentRPM * 1.67f + extraBuff;
+				}
+				else{
+					gDelta.x = aimVec.x * gPlayerInfo[playerNum].currentRPM / 1.3f + extraBuff;
+					gDelta.y = aimVec.y * gPlayerInfo[playerNum].currentRPM / 1.5f + extraBuff;
+					gDelta.z = aimVec.z * gPlayerInfo[playerNum].currentRPM / 1.3f + extraBuff;
+				}
+			}
+			else{
+				gDelta.x = aimVec.x * gPlayerInfo[playerNum].currentRPM + extraBuff;
+				gDelta.y = aimVec.y * gPlayerInfo[playerNum].currentRPM + extraBuff;
+				gDelta.z = aimVec.z * gPlayerInfo[playerNum].currentRPM + extraBuff;
+			}
+		}
+		else{
+			gDelta.x = aimVec.x * gPlayerInfo[playerNum].currentRPM;
+			gDelta.y = aimVec.y * gPlayerInfo[playerNum].currentRPM;
+			gDelta.z = aimVec.z * gPlayerInfo[playerNum].currentRPM;
+		}
 	}
 
 
@@ -288,18 +341,22 @@ OGLVector3D		aimVec;
 	gCoord.y += gDelta.y * fps;
 	gCoord.z += gDelta.z * fps;
 
-	y = GetTerrainY(gCoord.x, gCoord.z) + 200.0f;
+	if(gTrackNum != TRACK_NUM_ATLANTIS)
+		y = GetTerrainY(gCoord.x, gCoord.z) + 170.0f;
+	else
+		y = GetTerrainY(gCoord.x, gCoord.z) + 200.0f;
 
 	if (gCoord.y < y)
 	{
 		gCoord.y = y;
 		gDelta.y = 0;
 	}
-	else
-	if (gCoord.y > (y + SUB_MAX_Y))
-	{
-		gCoord.y = y + SUB_MAX_Y;
-		gDelta.y = 0;
+	else{
+		if (gCoord.y > (y + SUB_MAX_Y))
+		{
+			gCoord.y = y + SUB_MAX_Y;
+			gDelta.y = 0;
+		}
 	}
 
 
@@ -705,27 +762,36 @@ short			avoidTurn;
     
     
     // submarine hacks to make them useful/responsive in non-water tracks
-    if(gPlayerInfo[player].vehicleType == CAR_TYPE_SUB){
+	// SUBMARINE HAX DID NOT WORK AT ALL
+    /*if(gPlayerInfo[player].vehicleType == CAR_TYPE_SUB){
         if(gPlayerInfo[player].zappedTimer > 0.0f){
             gPlayerInfo[player].submarineImmobilized = gPlayerInfo[player].zappedTimer / 2.0f;
+			gPlayerInfo[player].canBeZapped = false;
         }
+		else{
+			gPlayerInfo[player].canBeZapped = true;
+		}
         
         if(gTrackNum != TRACK_NUM_ATLANTIS){
-            gPlayerInfo[player].submarineAdditionalSpeed = 1000.0f + (gPlayerInfo[player].superSuspensionTimer * 2) + (gPlayerInfo[player].stickyTiresTimer * 2);
+			if(gPlayerInfo[0].place <= 4){
+				gPlayerInfo[player].submarineAdditionalSpeed = -20.0f;
+			}
+			else{
+				gPlayerInfo[player].submarineAdditionalSpeed = 990.0f + (gPlayerInfo[player].superSuspensionTimer) + (gPlayerInfo[player].stickyTiresTimer) - gPlayerInfo[player].frozenTimer - gPlayerInfo[player].flamingTimer;
+			}
         }
-        
         if(gPlayerInfo[player].flamingTimer > 0.0f){
-            gPlayerInfo[player].flamingTimer = 0.0f; // flames do nothing to subs made of iron
+			gPlayerInfo[player].submarineAdditionalSpeed -= 10.0f;
         }
         
         if(gPlayerInfo[player].frozenTimer > 0.0f){
-            gPlayerInfo[player].frozenTimer = 0.0f; // ice does nothing to subs made of iron
+			gPlayerInfo[player].submarineAdditionalSpeed -= 12.0f;
         }
         
         if(gPlayerInfo[player].invisibilityTimer > 0.0f){
-            // ?
+			gPlayerInfo[player].submarineAdditionalSpeed += 30.0f;
         }
-    }
+    }*/
     
 
 				/* SEE IF CPU PLAYER SHOULD ATTACK */

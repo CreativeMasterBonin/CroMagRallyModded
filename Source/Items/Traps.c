@@ -41,6 +41,17 @@ static void MoveDart(ObjNode *theNode);
 static void MoveDragon(ObjNode *theNode);
 static void MoveTroll(ObjNode *theNode);
 
+// basic inaccurate lerping functions
+float LerpFloat(float from, float to, float delta){
+	return (from * (1.0f - delta)) + (to * delta);
+}
+double LerpDouble(double from, double to, double delta){
+	return from + delta * (to - from);
+}
+int LerpInt(int from, int to, int delta){
+	return from + delta * (to - from);
+}
+
 
 /****************************/
 /*    CONSTANTS             */
@@ -88,7 +99,6 @@ static void MoveTroll(ObjNode *theNode);
 #define	TimeSinceBolt	SpecialF[3]
 #define	CapsuleBob		SpecialF[4]
 
-
 /************************* ADD DUST DEVIL *********************************/
 
 Boolean AddDustDevil(TerrainItemEntryType *itemPtr, long  x, long z)
@@ -98,7 +108,7 @@ int		i;
 
 
 			/* CREATE BASE */
-
+	
 	NewObjectDefinitionType def =
 	{
 		.group		= MODEL_GROUP_LEVELSPECIFIC,
@@ -137,6 +147,11 @@ int		i;
 
 		baseObj = newObj;
 	}
+	
+	// grabs the x and z coord and prints it to the console (if able to)
+	/*printf("X: %5.f\n",baseObj->InitCoord.x);
+	printf("Z: %5.f\n",baseObj->InitCoord.z);*/
+	
 
 	return(true);													// item was added
 }
@@ -154,6 +169,7 @@ float	baseX,x,z;
 float	bendIndex;
 static const float	segOffsets[] = {100,350,250,150,150};
 int				particleGroup,magicNum;
+	float homePosX,homePosZ,homePosXNeg,homePosZNeg;
 
 			/***************/
 			/* SEE IF GONE */
@@ -169,8 +185,39 @@ int				particleGroup,magicNum;
 		/********************/
 		/* UPDATE ANIMATION */
 		/********************/
-
+	// this did not work
+	homePosX = baseObj->InitCoord.x;
+	homePosXNeg = baseObj->InitCoord.x * -1.0f;
+	homePosZ = baseObj->InitCoord.z;
+	homePosZNeg = baseObj->InitCoord.z * -1.0f;
+	
 	dr = 5.0f;
+	
+	// smoothly move pos towards the player in hard mode in the night
+	// sort of a way to slow the player down so computer drivers can catch up!
+	// the first whirlwind object was picked for this task that showed up
+	// this is a feature that does not require any extra settings to be enabled, just set your difficulty to high to play with it
+	if(gGamePrefs.difficulty == DIFFICULTY_HARD){
+		if(baseObj->InitCoord.x == 200000 && baseObj->InitCoord.z == 74300){ // coords are the whirlwind right after the end of first big area and next to bone item before curve into first twisty area
+			if(gPlayerInfo->lapNum >= 2){
+				baseObj->Coord.x = LerpFloat(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac + (0.1f + gUserPhysics.carStats->speed * 1.0f));
+				baseObj->Coord.y = LerpFloat(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac);
+				baseObj->Coord.z = LerpFloat(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac + (0.1f + gUserPhysics.carStats->speed * 1.0f));
+			}
+			else{
+				baseObj->Coord.x = LerpFloat(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.y = LerpFloat(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.z = LerpFloat(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac / 2.0f);
+			}
+		}
+		else{
+			if(gPlayerInfo->lapNum >= 2){
+				baseObj->Coord.x = LerpFloat(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.y = LerpFloat(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.z = LerpFloat(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac / 2.0f);
+			}
+		}
+	}
 
 	baseX = x = baseObj->Coord.x;							// get base/top coords
 	z = baseObj->Coord.z;
@@ -196,7 +243,6 @@ int				particleGroup,magicNum;
 		segObj = segObj->ChainNode;					// next segment in chain
 		i++;
 	}while(segObj);
-
 
 		/***********************/
 		/* UPDATE SOUND EFFECT */
@@ -235,7 +281,7 @@ int				particleGroup,magicNum;
 		/* MAKE DUST PARTICLES */
 		/***********************/
 
-	if (gFramesPerSecond < 15.0f)									// help us out if speed is really bad
+	if (gFramesPerSecond < 20.0f)									// help us out if speed is really bad (was 15fps threshold)
 		return;
 
 
@@ -653,7 +699,14 @@ float		dist;
 	}
     
     theNode->Skeleton->AnimSpeed = RandomFloat() * 1.52f;
-
+	
+	// doesnt work
+	/*for (int i = 0; i < gNumTotalPlayers; i++){
+		if (FindClosestPlayer(nil,gPlayerInfo[i].coord.x,gPlayerInfo[i].coord.z,200, true,&dist) != -1){
+			// turn catapult towards players
+			theNode->Rot.y = TurnObjectTowardTarget(gPlayerInfo[i].objNode, &gCoord, gPlayerInfo[i].coord.x, gPlayerInfo[i].coord.z, PI, false);
+		}
+	}*/
 
 	switch(skeleton->AnimNum)
 	{

@@ -1324,7 +1324,7 @@ void OGL_DisableLighting(void)
 
 static char* UpdateDebugText(void)
 {
-	static char debugTextBuffer[256];
+	static char debugTextBuffer[384]; // the buffer size was originally 256
 	extern short gNumFreeSupertiles;
 	extern int gFreeTwitches;
 
@@ -1343,6 +1343,8 @@ static char* UpdateDebugText(void)
 		"\nSTEER:\t%+.02f%s"
 		"\nX:\t\t%d"
 		"\nZ:\t\t%d"
+		"\nPlayerInfo_0_POWTYPE:\t\t%d"
+		"\nPlayerInfo_0_POWQUANTITY:\t\t%d"
 		,
 		(int)(gFramesPerSecond + .5f),
 		gPolysThisFrame,
@@ -1362,26 +1364,23 @@ static char* UpdateDebugText(void)
 		gPlayerInfo[0].steering,
 		gPlayerInfo[0].steering == gPlayerInfo[0].analogSteering.x? "": "*",
 		(int) gPlayerInfo[0].coord.x,
-		(int) gPlayerInfo[0].coord.z
+		(int) gPlayerInfo[0].coord.z,
+		(int) gPlayerInfo[0].powType,
+		(int) gPlayerInfo[0].powQuantity
 	);
-
 	return debugTextBuffer;
 }
 
 static void MoveDebugText(ObjNode* theNode)
 {
-    // disable debug text
-    if(GetKeyState(SDL_SCANCODE_0) && _DEBUG){
+	// debug text can be enabled at any time, no consequences
+    if(GetKeyState(SDL_SCANCODE_0)){
         debugInfoVisible = true;
         SetObjectVisible(theNode,true);
     }
-    else if(GetKeyState(SDL_SCANCODE_1) && _DEBUG){
+    else if(GetKeyState(SDL_SCANCODE_1)){
         debugInfoVisible = false;
         SetObjectVisible(theNode,false);
-    }
-    
-    if(!_DEBUG){
-        debugInfoVisible = false;
     }
     
     if(debugInfoVisible){

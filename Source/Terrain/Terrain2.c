@@ -317,7 +317,7 @@ Boolean			flag;
 	if (numItems == 0)
 		return;
     
-    if(_DEBUG && showAddTerrainDebugInfo == true){
+    if(showAddTerrainDebugInfo == true){
         if(numItems > 0){
             printf(" Num Of Items On Supertile: %lu , at Row: %lu, at Column: %lu. \n",numItems,row,col);
         }
@@ -352,7 +352,7 @@ Boolean			flag;
 			ShowSystemErr(type);
 		}
         
-        if(_DEBUG && showAddTerrainDebugInfo == true){
+        if(showAddTerrainDebugInfo == true){
             //printf("\n Item Pointer: %*u",itemPtr[i]);
             if(type == 0){
                 printf("ITEM POINTER AT: %lu => ObjAdd Type: START_COORD, ref-to: NilAdd(), X: %.5f  Y: %.5f \n",i,x,z);

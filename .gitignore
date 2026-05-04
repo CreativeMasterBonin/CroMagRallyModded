@@ -4,8 +4,19 @@ cache/
 extern/SDL2-*
 extern/SDL2.framework
 dist/
+CMakeFiles/
+CMakeCache*
+extern/Pomme
+extern/Pomme*
+Makefile
+.git
+.github
+CroMagRally.app
 
 # IDEs and OS-specific stuff
 .vs/
 .DS_Store
 *.user
+*.app
+
+# edited to remove other libraries and file types - 2026

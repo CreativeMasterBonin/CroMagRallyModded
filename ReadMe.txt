@@ -1,0 +1,9 @@
+Cro-Mag Rally 3.0.2
+© 2000 Pangea Software, Inc.
+
+Visit https://pangeasoft.net for the original makers of the game,
+or https://github.com/jorio/cromagrally for information about this updated version.
+
+This port is provided free of charge! If you'd like to support the development of
+Pangea game ports, feel free to visit https://jorio.itch.io and name your own price
+for any of the games there. Much appreciated! :)

@@ -96,6 +96,20 @@ void MoveCycObject(ObjNode *theNode){
             theNode->ColorFilter.a = 1.0f;
         }
     }
+	else if(gTrackNum == TRACK_NUM_DESERT){
+		if(gGamePrefs.nightMode == true){
+			theNode->ColorFilter.r = 0.20f;
+			theNode->ColorFilter.g = 0.19f;
+			theNode->ColorFilter.b = 0.25f;
+			theNode->ColorFilter.a = 0.35f;
+		}
+		else{
+			theNode->ColorFilter.r = 1.0f;
+			theNode->ColorFilter.g = 1.0f;
+			theNode->ColorFilter.b = 1.0f;
+			theNode->ColorFilter.a = 1.0f;
+		}
+	}
     else{
         theNode->ColorFilter.r = 1.0f;
         theNode->ColorFilter.g = 1.0f;
@@ -1763,6 +1777,11 @@ ObjNode	*newObj;
 	newObj = MakeNewDisplayGroupObject(&def);
 	if (newObj == nil)
 		return(false);
+	
+	// mod: volcano is too small with wider and taller terrain, so make it bigger
+	newObj->Scale.x += 2.0;
+	newObj->Scale.y += 2.0;
+	newObj->Scale.z += 2.0;
 
 	newObj->TerrainItemPtr = itemPtr;								// keep ptr to item list
 

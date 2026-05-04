@@ -22,9 +22,9 @@ cache_dir = os.path.abspath("cache")
 dist_dir = os.path.abspath("dist")
 
 game_name           = "CroMagRally"  # no spaces
-game_name_human     = "Cro-Mag Rally"  # spaces and other special characters allowed
+game_name_human     = "Cro-Mag Rally Modded"  # spaces and other special characters allowed
 game_package        = "io.jor.cromagrally"  # unique package name
-game_ver            = "3.0.1"
+game_ver            = "3.0.2"
 
 source_check        = "Source/Screens/SelectVehicle.c"  # some file that's likely to be from the game's source tree
 
@@ -205,8 +205,9 @@ class Project:
         if self.gen_env:
             env = os.environ.copy()
             env.update(self.gen_env)
-
-        call(["cmake", "-S", ".", "-B", self.dir_name] + self.gen_args, env=env)
+        
+        # change this back if not using the folder paths (for linux and macOS) to: call(["cmake", "-S", ".", "-B", self.dir_name] + self.gen_args, env=env)
+        call(["cmake", "-DCMAKE_C_COMPILER=/usr/bin/gcc", "-DCMAKE_CXX_COMPILER=/usr/bin/g++", "-S", ".", "-B", self.dir_name] + self.gen_args, env=env)
 
     def build(self):
         build_command = ["cmake", "--build", self.dir_name]

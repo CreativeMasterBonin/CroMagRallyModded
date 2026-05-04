@@ -17,7 +17,7 @@
 
 #define TAB_STOP 128.0f
 
-#define MAX_LINEBREAKS_PER_OBJNODE	16
+#define MAX_LINEBREAKS_PER_OBJNODE	128 // was 16 for orignal amount of line breaks '\n' in total text obj char count
 
 #define MAX_IMMEDIATEMODE_QUADS		1024
 

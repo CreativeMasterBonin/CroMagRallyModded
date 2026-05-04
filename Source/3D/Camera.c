@@ -422,9 +422,8 @@ OGLVector3D up = { 0,1,0 };		// NOT const, it's transformed in 1st-person view
 				goto update;
 		}
         case CAMERA_MODE_FREECAM:
-            if(_DEBUG){
-                printf("Freecam disabled.");
-            }
+			
+			//printf("Freecam disabled.");
             gPlayerInfo[playerNum].cameraMode = CAMERA_MODE_NORMAL1;
             break;
 	}

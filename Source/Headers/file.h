@@ -78,6 +78,9 @@ typedef struct
 	TournamentProgression tournamentProgression;
 	char	playerName[32];
     Boolean nightMode; // file save nightMode choice
+	Boolean silenceAnnouncer; // make the voice be quiet
+	Boolean superSubMode; // enable the sub in normal tracks
+	Boolean cpusAreSubs; // enable CPU subs in normal tracks
 }PrefsType;
 
 #define PREFS_FOLDER_NAME "CroMagRally"

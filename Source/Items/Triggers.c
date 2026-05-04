@@ -53,7 +53,11 @@ static Boolean DoTrig_Druid(ObjNode *theNode, ObjNode *whoNode, Byte sideBits);
 
 // modded triggers
 static Boolean DoTrig_ZapperPOW(ObjNode *theNode, ObjNode *whoNode, Byte sideBits);
-
+static Boolean DoTrig_NoBehaviorPow(ObjNode *theNode, ObjNode *whoNode, Byte sideBits);
+// basic inaccurate lerping
+float TriggerLerpFloat(float from, float to, float delta){
+	return (from * (1.0f - delta)) + (to * delta);
+}
 
 /****************************/
 /*    CONSTANTS             */
@@ -79,6 +83,7 @@ enum
 #define	POWType			Special[0]			// powerup type
 #define	POWHiddenTimer	SpecialF[0]
 #define	POWHidden		Flag[0]
+#define POWRandomized	Flag[0]				// power randomized
 												// TRIGGER HANDLER TABLE
 												//========================
 
@@ -118,6 +123,27 @@ Boolean gAnnouncedPOW[MAX_POW_TYPES];
 short	gNumTorches;
 ObjNode	*gTorchObjs[MAX_TORCHES];
 
+
+Boolean DoTrig_NoBehaviorPow(ObjNode *theNode, ObjNode *whoNode, Byte sideBits){
+	short    playerNum;
+		(void) sideBits;
+		playerNum = whoNode->PlayerNum;
+				/* ANNOUNCE IT */
+		// no action
+
+
+				/* PUT INTO HIDE MODE */
+		theNode->POWHidden = true;
+		theNode->POWHiddenTimer = 5.0;                    // n seconds until it reappears
+		theNode->StatusBits |= STATUS_BIT_HIDDEN;
+		theNode->CType = 0;
+
+		if (theNode->ShadowNode)                        // also hide shadow
+		{
+			theNode->ShadowNode->StatusBits |= STATUS_BIT_HIDDEN;
+		}
+		return(false);                                // not solid
+}
 
 
 /******************** HANDLE TRIGGER ***************************/
@@ -275,12 +301,17 @@ float			heightOff;
 		.moveCall	= MovePOW,
 		.scale 		= 1.0,
 	};
+	
 	newObj = MakeNewDisplayGroupObject(&def);
 	if (newObj == nil)
 		return false;
 
-	newObj->TerrainItemPtr = itemPtr;						// keep ptr to item list
+	if(newObj->POWRandomized == true){
+		powType = RandomRange(POW_TYPE_NONE + 1, POW_TYPE_STICKY_TIRES);
+	}
 
+	newObj->TerrainItemPtr = itemPtr;						// keep ptr to item list
+	
 	newObj->POWType = powType;								// remember powerup type
 
 
@@ -312,7 +343,6 @@ static void MovePOW(ObjNode *theNode)
 		DeleteObject(theNode);
 		return;
 	}
-
 
 		/* SEE IF HIDDEN */
 
@@ -352,7 +382,6 @@ static void MovePOW(ObjNode *theNode)
 
 		}
 	}
-
 	UpdateShadow(theNode);
 }
 
@@ -390,12 +419,12 @@ Boolean	thud = false;
         // mod: powers give different amounts at random depending on type
         
         // still keep 999 cheat as a debug feature
-        if(_DEBUG && GetKeyState(SDL_SCANCODE_9)){
+        if(GetKeyState(SDL_SCANCODE_9) && gDebugMode > 0){
             gPlayerInfo[playerNum].powQuantity = 999; // was = 1
         }
         
         // powers' quantity is now dependent on vehicle type; when sub, you get more non-animation based weapons, since they won't work with subs
-        
+        // randomization also adds more surprise to what you will get when getting items
         if(gPlayerInfo[playerNum].vehicleType != CAR_TYPE_SUB){
             if(powType == POW_TYPE_OIL || powType == POW_TYPE_BONE){
                 gPlayerInfo[playerNum].powQuantity = RandomRange(1,3);
@@ -425,7 +454,27 @@ Boolean	thud = false;
                 gPlayerInfo[playerNum].powQuantity = RandomRange(5,20);
             }
             else{
-                gPlayerInfo[playerNum].powQuantity = 1;
+				if(powType == POW_TYPE_INVISIBILITY){
+					if (gPlayerInfo[playerNum].invisibilityTimer <= 0.0f)
+						if (gPlayerInfo[playerNum].onThisMachine && (!gPlayerInfo[playerNum].isComputer))
+							gPlayerInfo[playerNum].powQuantity += 1;
+					//SetInvisibility(playerNum);
+				}
+				else if(powType == POW_TYPE_SUPER_SUSPENSION){
+					if(gPlayerInfo[playerNum].superSuspensionTimer <= 0.0f)
+						if(gPlayerInfo[playerNum].onThisMachine && (!gPlayerInfo[playerNum].isComputer))
+							gPlayerInfo[playerNum].powQuantity += 1;
+					//SetSuspensionPOW(playerNum);
+				}
+				else if(powType == POW_TYPE_STICKY_TIRES){
+					if(gPlayerInfo[playerNum].stickyTiresTimer <= 0.0f)
+						if(gPlayerInfo[playerNum].onThisMachine && (!gPlayerInfo[playerNum].isComputer))
+							gPlayerInfo[playerNum].powQuantity += 1;
+					//SetStickyTires(playerNum);
+				}
+				else{
+					gPlayerInfo[playerNum].powQuantity = 1;
+				}
             }
         }
         else{
@@ -458,7 +507,23 @@ Boolean	thud = false;
 
 		if (gPlayerInfo[playerNum].onThisMachine && (!gPlayerInfo[playerNum].isComputer) && (!gAnnouncedPOW[powType]))
 		{
-            PlayAnnouncerSound(EFFECT_POW_BONEBOMB + powType,false, .4);
+			if(powType > EFFECT_POW_STICKYTIRES){
+				// there are no announcer sounds for custom items, so play a generic 'good' sound
+				float randomizedSelector = 0.8f + RandomFloat() * 3.2f;
+				
+				if(randomizedSelector <= 1.0f){
+					PlayAnnouncerSound(EFFECT_GOODJOB,false, .4);
+				}
+				else if(randomizedSelector >= 2.0f && randomizedSelector < 3.0f){
+					PlayAnnouncerSound(EFFECT_OHYEAH,false, .4);
+				}
+				else{
+					PlayAnnouncerSound(EFFECT_ARROWHEAD,false, .4);
+				}
+			}
+			else{
+				PlayAnnouncerSound(EFFECT_POW_BONEBOMB + powType,false, .4);
+			}
             gAnnouncedPOW[powType] = true;
 		}
 		else
@@ -499,21 +564,14 @@ Boolean AddToken(TerrainItemEntryType *itemPtr, long  x, long z)
 ObjNode			*newObj;
 OGLPoint3D		where;
 
-    if(!_DEBUG){
-        // only do these in this mode
-        if (gGameMode != GAME_MODE_TOURNAMENT){
-            return(true);
-        }
-    }
-
 				/* CREATE OBJECT */
 
 	where.y = GetTerrainY(x,z);
 	where.x = x;
 	where.z = z;
     
-    if(_DEBUG){
-        printf("\n Token Location: %.10f, %.10f, %.10f \n",where.x,where.y,where.z);
+    if(gDebugMode > 1){
+        printf("\n Token Location: %.1f, %.3f, %.1f \n",where.x,where.y,where.z);
     }
 
 	NewObjectDefinitionType def =
@@ -534,6 +592,9 @@ OGLPoint3D		where;
     else if(gTrackNum == TRACK_NUM_SCANDINAVIA){
         def.scale = 1.25;
     }
+	else if(gTrackNum == TRACK_NUM_ICE || gTrackNum == TRACK_NUM_DESERT){
+		def.scale = RandomFloat() * 1.13;
+	}
     
 	newObj = MakeNewDisplayGroupObject(&def);
 	if (newObj == nil)
@@ -551,7 +612,9 @@ OGLPoint3D		where;
 
     int yScaleColBoxAddition = (def.scale + PI) * 2;
     
-    printf("\n Token Scale: %.3f \n",def.scale);
+	if(gDebugMode > 1){
+		printf("\n Token Scale: %.2f \n",def.scale);
+	}
     
     //yScaleColBoxAddition
     //SetObjectCollisionBounds(ObjNode *theNode, short top, short bottom, short left,short right, short front, short back)
@@ -565,28 +628,40 @@ OGLPoint3D		where;
     // change scale of col box based on scale of object, also multiplying it by 2 for size of actual model for accurate collision
 	SetObjectCollisionBounds(newObj, (top * 3) + 5, bottom, left * 2, right * 2, front * 2, back * 2);// make collision box
 
-    if(gTrackNum == TRACK_NUM_SCANDINAVIA){
-        newObj->ColorFilter.r = 1.0f;
-        newObj->ColorFilter.g = 0.25f;
-        newObj->ColorFilter.g = 0.0f;
-    }
-    else if (gTrackNum == TRACK_NUM_ATLANTIS){
-        newObj->ColorFilter.r = 0.0f;
-        newObj->ColorFilter.g = 0.5f;
-        newObj->ColorFilter.g = 1.0f;
-    }
-    else if (gTrackNum == TRACK_NUM_ICE){
-        newObj->ColorFilter.r = 0.2f;
-        newObj->ColorFilter.g = 0.35f;
-        newObj->ColorFilter.g = 1.0f;
-    }
-    else if (gTrackNum == TRACK_NUM_EGYPT){
-        newObj->ColorFilter.r = 0.35f;
-        newObj->ColorFilter.g = 0.75f;
-        newObj->ColorFilter.g = 0.15f;
-    }
-    
-    
+	// do not allow color changing in tournament as that is a competitive mode (excluding competitive multiplayer modes)
+	if(gGameMode != GAME_MODE_TOURNAMENT){
+		if(gTrackNum == TRACK_NUM_SCANDINAVIA){
+			newObj->ColorFilter.r = 1.0f;
+			newObj->ColorFilter.g = 0.25f;
+			newObj->ColorFilter.b = 0.0f;
+		}
+		else if (gTrackNum == TRACK_NUM_ATLANTIS){
+			newObj->ColorFilter.r = 0.0f;
+			newObj->ColorFilter.g = 0.5f;
+			newObj->ColorFilter.b = 1.0f;
+		}
+		else if (gTrackNum == TRACK_NUM_ICE){
+			newObj->ColorFilter.r = 0.2f;
+			newObj->ColorFilter.g = 0.35f;
+			newObj->ColorFilter.b = 1.0f;
+		}
+		else if (gTrackNum == TRACK_NUM_EGYPT){
+			newObj->ColorFilter.r = 0.35f;
+			newObj->ColorFilter.g = 0.75f;
+			newObj->ColorFilter.b = 0.15f;
+		}
+		else if (gTrackNum == TRACK_NUM_DESERT){
+			newObj->ColorFilter.r = 0.75f;
+			newObj->ColorFilter.g = 0.75f;
+			newObj->ColorFilter.b = 0.02f;
+		}
+		else{
+			newObj->ColorFilter.r = 1.0f;
+			newObj->ColorFilter.g = 1.0f;
+			newObj->ColorFilter.b = 1.0f;
+		}
+	}
+	// the token should never be invisible color-wise
     newObj->ColorFilter.a = 1.0f;
 
 			/* MAKE SHADOW */
@@ -615,6 +690,11 @@ static void MoveToken(ObjNode *theNode)
     }
     else{
         theNode->Rot.y += (gFramesPerSecondFrac) * 2;
+		// hovering up and down
+		theNode->Coord.y = (theNode->InitCoord.y + 32.0f) + sinf(theNode->Rot.y) * 80.0f;
+		if(gDebugMode > 0 && theNode->Coord.x == 104000 && theNode->Coord.z == 150200){
+			//printf("Y Coord of node: %.2f \n",theNode->Coord.y);
+		}
     }
     
 	UpdateObjectTransforms(theNode);

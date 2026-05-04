@@ -312,3 +312,14 @@ void SetNightMode(){
         //?
     }
 }
+
+void SetAnnouncerSilenceMode(){
+	if(gGamePrefs.silenceAnnouncer){
+		// ?
+	}
+}
+
+// if a setting is a no-operation type and should do nothing post-change
+void SetSettingNOP(){
+	// ???
+}

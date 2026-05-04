@@ -515,9 +515,9 @@ short	musicFileRefNum;
         }
     }
     
-    if(_DEBUG){
+    /*if(_DEBUG){
         printf(" Current Song: %u \n",songNum);
-    }
+    }*/
 
 	iErr = FSMakeFSSpec(gDataSpec.vRefNum, gDataSpec.parID, songs[songNum].path, &spec);
 	GAME_ASSERT(!iErr);
@@ -1266,6 +1266,13 @@ int			count = 0;
 
 void PlayAnnouncerSound(short effectNum, Boolean override, float delay)
 {
+	// never play any announcer sounds if the setting is enabled
+	if(gGamePrefs.silenceAnnouncer){
+		delay = 3.0f;
+		gAnnouncerDelay = delay;
+		return;
+	}
+	
 	gAnnouncerDelay = delay;
 
 

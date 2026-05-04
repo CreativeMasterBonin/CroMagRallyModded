@@ -407,6 +407,19 @@ void SetPhysicsForVehicleType(short playerNum)
 	{
 		info->maxSpeed *= .7f;
 	}
+	else{ // make CPUs FASTER in hard mode and other modes except simplistic
+		// cpus have powerups and cheatsy behavior, yet are too slow and clumsy to catch up to the player, this will help in the speed department
+		switch(gGamePrefs.difficulty){
+			case DIFFICULTY_EASY:
+				info->maxSpeed *= .9f;
+			case DIFFICULTY_MEDIUM:
+				info->maxSpeed *= 1.23f;
+			case DIFFICULTY_HARD:
+				info->maxSpeed *= 2.0f;
+			default:
+				info->maxSpeed *= 1.0f; // all other possible modes just have cars stay the same speed
+		}
+	}
 
 				/* ACCELERATION  */
 
@@ -561,7 +574,14 @@ long	oldLeft,oldRight,oldFront,oldBack,oldTop,oldBottom;
         if(gPlayerInfo[gCurrentPlayerNum].isComputer){
             if(gPlayerInfo[gCurrentPlayerNum].powType == POW_TYPE_ROMANCANDLE || gPlayerInfo[gCurrentPlayerNum].powType == POW_TYPE_BOTTLEROCKET){
                 gPlayerInfo[gCurrentPlayerNum].powQuantity = 1;
-            }
+            } // super weapon nerfing
+			else if(gPlayerInfo[gCurrentPlayerNum].powType == POW_TYPE_BEAM || gPlayerInfo[gCurrentPlayerNum].powType == POW_TYPE_WHIRLWIND || gPlayerInfo[gCurrentPlayerNum].powType == POW_TYPE_ZAPPER){
+				gPlayerInfo[gCurrentPlayerNum].powQuantity = 1; // cpus should only be able to use player advantage items once per collection
+			} // custom per map items
+			else if(gPlayerInfo[gCurrentPlayerNum].powType == POW_TYPE_CUSTOM){
+				gPlayerInfo[gCurrentPlayerNum].powType = POW_TYPE_MINE; // until the custom item system is implemented, make cpus use mines
+				gPlayerInfo[gCurrentPlayerNum].powQuantity = 10;
+			}
         }
     }
     else{
@@ -1432,7 +1452,7 @@ float	fps = gFramesPerSecondFrac;
 	{
 		int	freq;
 
-		freq = NORMAL_CHANNEL_RATE + (gPlayerInfo[p].currentRPM * 150000.0);
+		freq = NORMAL_CHANNEL_RATE + (gPlayerInfo[p].currentRPM * 100000.0); // was 150000.0 which resulted in a high pitched engine noise
 		ChangeChannelRate(gPlayerInfo[p].engineChannel, freq);
 	}
     
@@ -1610,7 +1630,16 @@ ObjNode	*theNode;
         
 		theNode = theNode->ChainNode;
 	}
-
+	
+	// remove invisibility colors when finished
+	if(gPlayerInfo[p].isComputer){
+		theNode = gPlayerInfo[p].objNode;
+		if(gPlayerInfo[p].invisibilityTimer <= 0.0f){
+			theNode->ColorFilter.r = 1.0f;
+			theNode->ColorFilter.g = 1.0f;
+			theNode->ColorFilter.b = 1.0f;
+		}
+	}
 }
 
 
@@ -2342,9 +2371,9 @@ Boolean			onWater;
 			gPlayerInfo[player].oldPositionTimer += POSITION_TIMER;			// reset timer
 
 			if (onWater)
-				stuckDist = 40.0f;
+				stuckDist = 10.0f + RandomFloat() * 40.0f;
 			else
-				stuckDist = 80.0f;
+				stuckDist = 50.0f + RandomFloat() * 100.0f;
 
 			if (CalcDistance3D(gPlayerInfo[player].oldPosition.x, gPlayerInfo[player].oldPosition.y, gPlayerInfo[player].oldPosition.z,
 								gCoord.x, gCoord.y, gCoord.z) < stuckDist)		// see if player isnt moving
@@ -2352,7 +2381,7 @@ Boolean			onWater;
 				if (gPlayerInfo[player].reverseTimer > 0.0f) // if was reversing then go forward again
 					gPlayerInfo[player].reverseTimer = 0;
 				else
-					gPlayerInfo[player].reverseTimer = RandomRange(4.0f, 5.0f); // modded try moving backwards to get unstuck, was just 4.0f
+					gPlayerInfo[player].reverseTimer = RandomRange(3.0f, 7.0f); // modded try moving backwards to get unstuck, was just 4.0f
 			}
 			else
 			{
@@ -2422,8 +2451,9 @@ Boolean			onWater;
 			}
 			else
 			{
-				pathVec.x = 1;													// no path found, so set default values
-				pathVec.y = 0;
+				// mod: add some variation when the path isn't found
+				pathVec.x = -2.0f + RandomFloat() * 2.0f;													// no path found, so set default values
+				pathVec.y = -4.0f + RandomFloat2() * 4.0f;
 				pathVarianceAngle = 0;
 			}
 			gPlayerInfo[player].pathVec = pathVec;								// keep a copy
@@ -2447,8 +2477,8 @@ Boolean			onWater;
 				{
 					/* GET PATH VECTOR FAR AHEAD OF US TO SEE IF WE'RE ABOUT TO TURN SHARP */
 
-					x = gCoord.x + (gDelta.x * .92f); // project n seconds into the future
-					z = gCoord.z + (gDelta.z * .92f); // 2 values here were .9f
+					x = gCoord.x + (gDelta.x * 0.97f); // project n seconds into the future
+					z = gCoord.z + (gDelta.z * 0.97f); // 2 values here were .9f
                     
 					if (CalcPathVectorFromCoord(x, gCoord.y, z, &futurePathVec))		// get path vector
 					{
@@ -2460,7 +2490,7 @@ Boolean			onWater;
 							brake = true;
 				  		}
 				  		else
-				  		if (dot < .3f)													// if its a tight turn, then just let off gas
+				  		if (dot < 0.3f)													// if its a tight turn, then just let off gas
 				  		{
 				  			giveGas = false;
 				  		}
@@ -2911,6 +2941,9 @@ ObjNode			*wheel,*link;
 		DoFatalAlert("CreateCarWheelsAndHead: playerNum >= MAX_PLAYERS");
 
 	sex = gPlayerInfo[playerNum].sex;							// get player sex
+	if(sex < 0)
+		sex = 0;
+	
 	if (sex > 1)
         sex = 1;
 		//DoFatalAlert("CreateCarWheelsAndHead: sx > 1");
@@ -3210,9 +3243,16 @@ float			fps = gFramesPerSecondFrac;
     // fun
     if(gPlayerInfo[playerNum].onThisMachine && !gPlayerInfo[playerNum].isComputer){
         if(GetKeyState(SDL_SCANCODE_Z) && GetKeyState(SDL_SCANCODE_TAB) && gPlayerInfo[playerNum].canBeZapped == true){
-            PlayEffect_Parms(EFFECT_NITRO_SHOT, FULL_CHANNEL_VOLUME, FULL_CHANNEL_VOLUME, NORMAL_CHANNEL_RATE); // had * 2/3 normal channel rate
+			if(!gGamePrefs.silenceAnnouncer){
+				PlayEffect_Parms(EFFECT_NITRO_SHOT, FULL_CHANNEL_VOLUME, FULL_CHANNEL_VOLUME, NORMAL_CHANNEL_RATE); // had * 2/3 normal channel rate
+			}
             gPlayerInfo[playerNum].zappedTimer = 10.0f;
-        }
+        } // testing powerups even if items don't exist in the map
+		else if(GetKeyState(SDL_SCANCODE_PERIOD) && GetKeyState(SDL_SCANCODE_COMMA)){
+			gPlayerInfo[playerNum].powType = RandomRange(POW_TYPE_NONE + 1,POW_TYPE_STICKY_TIRES); // custom is not selectable right now
+			gPlayerInfo[playerNum].powQuantity = RandomRange(1,3);
+			return;
+		}
     }
     
     

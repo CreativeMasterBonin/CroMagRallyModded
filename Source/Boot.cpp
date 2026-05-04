@@ -156,7 +156,7 @@ static void GetInitialWindowSize(int display, int& width, int& height)
 
 static void Boot(int argc, char** argv)
 {
-    printf("Starting up... \n");
+    printf("Starting up modded version... \n");
     
 	const char* executablePath = argc > 0 ? argv[0] : NULL;
 

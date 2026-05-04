@@ -967,6 +967,7 @@ enum
 			{
 				ModifySpriteObjectFrame(node, INFOBAR_SObjType_Weapon_Bone + pi->powType);
                 
+				// mod: modified to allow custom powerups to have correct (or almost correct) icons
                 if(pi->powType == POW_TYPE_ZAPPER){
                     //INFOBAR_SObjType_Token_ArrowheadDim
                     node->Scale.x *= 0.55;
@@ -974,6 +975,40 @@ enum
                     node->Scale.z *= 0.55;
                     ModifySpriteObjectFrame(node,INFOBAR_SObjType_Token_Arrowhead);
                 }
+				else if(pi->powType == POW_TYPE_INVISIBILITY){
+					ModifySpriteObjectFrame(node,INFOBAR_SObjType_Invisibility);
+				}
+				else if(pi->powType == POW_TYPE_STICKY_TIRES){
+					ModifySpriteObjectFrame(node,INFOBAR_SObjType_StickyTires);
+				}
+				else if(pi->powType == POW_TYPE_SUPER_SUSPENSION){
+					ModifySpriteObjectFrame(node,INFOBAR_SObjType_Suspension);
+				}
+				else if(pi->powType == POW_TYPE_BEAM){
+					ModifySpriteObjectFrame(node,INFOBAR_SObjType_GreenTorch);
+				}
+				else if(pi->powType == POW_TYPE_WHIRLWIND){
+					node->Scale.x *= 0.5;
+					node->Scale.y *= 0.5;
+					node->Scale.z *= 0.5;
+					ModifySpriteObjectFrame(node,INFOBAR_SObjType_Go);
+				}
+				else if(pi->powType == POW_TYPE_CUSTOM){
+					node->Scale.x *= 1.1;
+					node->Scale.y *= 1.1;
+					node->Scale.z *= 1.1;
+					ModifySpriteObjectFrame(node,INFOBAR_SObjType_WrongWay); // placeholder to warn anyone who uses it in a non-standard way
+				}
+				
+				/*if(node->Scale.x != 1.0){
+					node->Scale.x = 1.0;
+				}
+				if(node->Scale.y != 1.0){
+					node->Scale.y = 1.0;
+				}
+				if(node->Scale.z != 1.0){
+					node->Scale.z = 1.0;
+				}*/
 
 				if (special->displayedValue != pi->powType &&
 					special->displayedValue != -1)
@@ -1914,7 +1949,13 @@ ObjNode	*newObj;
 		def.scale = .5f;
 	}
 
-	newObj = TextMesh_New(Localize(STR_LEVEL_1 + gTrackNum), kTextMeshAlignCenter, &def);
+	
+	if(gTrackNum < TRACK_NUM_DESERT || gTrackNum > NUM_TRACKS){
+		newObj = TextMesh_New(Localize(STR_CUSTOM_MAP), kTextMeshAlignCenter, &def);
+	}
+	else{
+		newObj = TextMesh_New(Localize(STR_LEVEL_1 + gTrackNum), kTextMeshAlignCenter, &def);
+	}
 
 	MakeTwitch(newObj, kTwitchPreset_TrackNameFadeOut | kTwitchFlags_KillPuppet);
 }
