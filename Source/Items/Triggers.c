@@ -54,10 +54,6 @@ static Boolean DoTrig_Druid(ObjNode *theNode, ObjNode *whoNode, Byte sideBits);
 // modded triggers
 static Boolean DoTrig_ZapperPOW(ObjNode *theNode, ObjNode *whoNode, Byte sideBits);
 static Boolean DoTrig_NoBehaviorPow(ObjNode *theNode, ObjNode *whoNode, Byte sideBits);
-// basic inaccurate lerping
-float TriggerLerpFloat(float from, float to, float delta){
-	return (from * (1.0f - delta)) + (to * delta);
-}
 
 /****************************/
 /*    CONSTANTS             */
@@ -228,7 +224,18 @@ OGLPoint3D        where;
     powType = itemPtr->parm[0];                                // get POW type
     heightOff = (float)itemPtr->parm[1] * 400.0f;            // get height off ground
 
+	//printf("powtype: %u x: %lu z: %lu",powType,x,z);
+	
                 /* CREATE OBJECT */
+	
+	short powTypeDef = 0;
+	
+	switch(powType){
+		case POW_TYPE_NONE:
+			powTypeDef = POW_TYPE_BONE;
+		default:
+			powTypeDef = powType;
+	}
 
     where.y = GetTerrainY(x,z) + heightOff;
     where.x = x;
@@ -237,7 +244,7 @@ OGLPoint3D        where;
     NewObjectDefinitionType def =
     {
         .group        = MODEL_GROUP_GLOBAL,
-        .type        = GLOBAL_ObjType_BonePOW + powType,
+        .type        = powTypeDef,
         .coord        = where,
         .flags        = gAutoFadeStatusBits | STATUS_BIT_AIMATCAMERA | STATUS_BIT_KEEPBACKFACES
                         | STATUS_BIT_NOLIGHTING | STATUS_BIT_NOTEXTUREWRAP | STATUS_BIT_CLIPALPHA,
@@ -289,11 +296,81 @@ float			heightOff;
 	where.y = GetTerrainY(x,z) + heightOff;
 	where.x = x;
 	where.z = z;
+	
+	// the modeltype to load for this POW obj (must be global)
+	short powTypeObject = GLOBAL_ObjType_BonePOW + powType;
+	
+	//printf("powtype: %u - x: %lu z: %lu - itemptr->:%u\n",powType,x,z,itemPtr->type);
+	
+	// randomly choose power up types
+	if(gGameModeIsForCPUs || gGamePrefs.randomizedItems){
+		powType = RandomRange(POW_TYPE_BONE,POW_TYPE_STICKY_TIRES);
+		powTypeObject = GLOBAL_ObjType_Token_ArrowHead;
+		
+		 // pows all became ROCKS... huh?
+		// allow more power up types and custom model selection and prevent out-of-bounds values
+		switch(powType){
+			case 0:
+				powTypeObject = GLOBAL_ObjType_BonePOW;
+				break;
+			case 1:
+				powTypeObject = GLOBAL_ObjType_OilPOW;
+				break;
+			case 2:
+				powTypeObject = GLOBAL_ObjType_NitroPOW;
+				break;
+			case 3:
+				powTypeObject = GLOBAL_ObjType_BirdBombPOW;
+				break;
+			case 4:
+				powTypeObject = GLOBAL_ObjType_RomanCandlePOW;
+				break;
+			case 5:
+				powTypeObject = GLOBAL_ObjType_BottleRocketPOW;
+				break;
+			case 6:
+				powTypeObject = GLOBAL_ObjType_TorpedoPOW;
+				break;
+			case 7:
+				powTypeObject = GLOBAL_ObjType_FreezePOW;
+				break;
+			case 8:
+				powTypeObject = GLOBAL_ObjType_MinePOW;
+				break;
+			case 9: // zapper
+				powTypeObject = GLOBAL_ObjType_Token_ArrowHead;
+				break;
+			case 10: // whirlwind
+				powTypeObject = GLOBAL_ObjType_Sign_Twister;
+				break;
+			case 11: // beam
+				powTypeObject = GLOBAL_ObjType_TeamBaseGreen;
+				break;
+			case 12: // invisibility (not a vanilla pow type)
+				powTypeObject = GLOBAL_ObjType_InvisibilityPOW;
+				break;
+			case 13: // super suspension (not a vanilla pow type)
+				powTypeObject = GLOBAL_ObjType_SuspensionPOW;
+				break;
+			case 14: // sticky tires (tyres) (not a vanilla pow type)
+				powTypeObject = GLOBAL_ObjType_StickyTiresPOW;
+				break;
+			case 15: // custom pow type (which has no function nor model)
+				powTypeObject = GLOBAL_ObjType_Token_ArrowHead;
+				break;
+			default:
+				powTypeObject = GLOBAL_ObjType_GreyRock; // any pow type that is not valid becomes a rock model
+				break;
+		}
+	}
+	
+	//printf("AddPOW has -> PowType: %u PowTypeObj: %u\n",powType,powTypeObject);
+	
 
 	NewObjectDefinitionType def =
 	{
 		.group		= MODEL_GROUP_GLOBAL,
-		.type		= GLOBAL_ObjType_BonePOW + powType,
+		.type		= powTypeObject,
 		.coord		= where,
 		.flags		= gAutoFadeStatusBits | STATUS_BIT_AIMATCAMERA | STATUS_BIT_KEEPBACKFACES
 						| STATUS_BIT_NOLIGHTING | STATUS_BIT_NOTEXTUREWRAP | STATUS_BIT_CLIPALPHA,
@@ -306,10 +383,11 @@ float			heightOff;
 	if (newObj == nil)
 		return false;
 
-	if(newObj->POWRandomized == true){
-		powType = RandomRange(POW_TYPE_NONE + 1, POW_TYPE_STICKY_TIRES);
+	newObj->POWRandomized = false;
+	if(gGamePrefs.randomizedItems){
+		newObj->POWRandomized = true; // unused flag
 	}
-
+	
 	newObj->TerrainItemPtr = itemPtr;						// keep ptr to item list
 	
 	newObj->POWType = powType;								// remember powerup type
@@ -403,7 +481,6 @@ Boolean	thud = false;
 
 	if (gPlayerInfo[playerNum].powType == powType)		// see if we already have this
 	{
-		//gPlayerInfo[playerNum].powQuantity = 999; // was += 1
         if(powType == POW_TYPE_BOTTLEROCKET || powType == POW_TYPE_ROMANCANDLE){
             gPlayerInfo[playerNum].powQuantity += 2;
         }
@@ -419,7 +496,7 @@ Boolean	thud = false;
         // mod: powers give different amounts at random depending on type
         
         // still keep 999 cheat as a debug feature
-        if(GetKeyState(SDL_SCANCODE_9) && gDebugMode > 0){
+        if(GetKeyState(SDL_SCANCODE_9) && gDebugMode == 1){
             gPlayerInfo[playerNum].powQuantity = 999; // was = 1
         }
         
@@ -439,10 +516,12 @@ Boolean	thud = false;
                 gPlayerInfo[playerNum].powQuantity = RandomRange(3,7);
             }
             else if(powType == POW_TYPE_NITRO){
-                gPlayerInfo[playerNum].powQuantity = 1;
                 if(gPlayerInfo[playerNum].isComputer){
                     gPlayerInfo[playerNum].nitroTimer += 3.0f;
                 }
+				else{
+					gPlayerInfo[playerNum].powQuantity = 1;
+				}
             }
             else if(powType == POW_TYPE_MINE){
                 gPlayerInfo[playerNum].powQuantity = RandomRange(3,9);
@@ -479,10 +558,12 @@ Boolean	thud = false;
         }
         else{
             if(powType == POW_TYPE_NITRO){
-                gPlayerInfo[playerNum].powQuantity = 1;
                 if(gPlayerInfo[playerNum].isComputer){
                     gPlayerInfo[playerNum].nitroTimer += 3.0f;
                 }
+				else{
+					gPlayerInfo[playerNum].powQuantity = 1;
+				}
             }
             else if(powType == POW_TYPE_ROMANCANDLE){
                 gPlayerInfo[playerNum].powQuantity = RandomRange(10,25);
@@ -499,30 +580,69 @@ Boolean	thud = false;
             }
         }
         
-        
-        
+		// random items may result in negative or no items, which is unintended; corrected that here
+		if(gPlayerInfo[playerNum].powQuantity <= 0){
+			gPlayerInfo[playerNum].powQuantity = 1;
+		}
         
         // modded to add randomness of 2.0 seconds plus the original time in seconds
 		gPlayerInfo[playerNum].attackTimer = 1.0 + (RandomFloat() * 2.0);		// CPU cars dont use this for at least 1 second
 
+		// dont play pow collected sounds on machines that are not this machine and didnt collect the pow!
 		if (gPlayerInfo[playerNum].onThisMachine && (!gPlayerInfo[playerNum].isComputer) && (!gAnnouncedPOW[powType]))
 		{
-			if(powType > EFFECT_POW_STICKYTIRES){
-				// there are no announcer sounds for custom items, so play a generic 'good' sound
-				float randomizedSelector = 0.8f + RandomFloat() * 3.2f;
-				
-				if(randomizedSelector <= 1.0f){
-					PlayAnnouncerSound(EFFECT_GOODJOB,false, .4);
+			// old method was not working with custom or randomized items, so it was replaced with a switch-case
+			switch(powType){
+				case POW_TYPE_BONE:{
+					PlayAnnouncerSound(EFFECT_POW_BONEBOMB,false, .4);
+					break;
 				}
-				else if(randomizedSelector >= 2.0f && randomizedSelector < 3.0f){
-					PlayAnnouncerSound(EFFECT_OHYEAH,false, .4);
+				case POW_TYPE_OIL:{
+					PlayAnnouncerSound(EFFECT_POW_OIL,false, .4);
+					break;
 				}
-				else{
-					PlayAnnouncerSound(EFFECT_ARROWHEAD,false, .4);
+				case POW_TYPE_NITRO:{
+					PlayAnnouncerSound(EFFECT_POW_NITRO,false, .4);
+					break;
 				}
-			}
-			else{
-				PlayAnnouncerSound(EFFECT_POW_BONEBOMB + powType,false, .4);
+				case POW_TYPE_BIRDBOMB:{
+					PlayAnnouncerSound(EFFECT_POW_PIGEON,false, .4);
+					break;
+				}
+				case POW_TYPE_ROMANCANDLE:{
+					PlayAnnouncerSound(EFFECT_POW_CANDLE,false, .4);
+					break;
+				}
+				case POW_TYPE_BOTTLEROCKET:{
+					PlayAnnouncerSound(EFFECT_POW_ROCKET,false, .4);
+					break;
+				}
+				case POW_TYPE_TORPEDO:{
+					PlayAnnouncerSound(EFFECT_POW_TORPEDO,false, .4);
+					break;
+				}
+				case POW_TYPE_FREEZE:{
+					PlayAnnouncerSound(EFFECT_POW_FREEZE,false, .4);
+					break;
+				}
+				case POW_TYPE_MINE:{
+					PlayAnnouncerSound(EFFECT_POW_MINE,false, .4);
+					break;
+				}
+				default: {
+					float randomizedSelector = 0.8f + RandomFloat() * 3.2f;
+					
+					if(randomizedSelector <= 1.0f){
+						PlayAnnouncerSound(EFFECT_GOODJOB,false, .4);
+					}
+					else if(randomizedSelector >= 2.0f && randomizedSelector < 3.0f){
+						PlayAnnouncerSound(EFFECT_OHYEAH,false, .4);
+					}
+					else{
+						PlayAnnouncerSound(EFFECT_ARROWHEAD,false, .4);
+					}
+					break;
+				}
 			}
             gAnnouncedPOW[powType] = true;
 		}
@@ -571,7 +691,7 @@ OGLPoint3D		where;
 	where.z = z;
     
     if(gDebugMode > 1){
-        printf("\n Token Location: %.1f, %.3f, %.1f \n",where.x,where.y,where.z);
+        //printf("\n Token Location: %.1f, %.3f, %.1f \n",where.x,where.y,where.z);
     }
 
 	NewObjectDefinitionType def =
@@ -583,17 +703,17 @@ OGLPoint3D		where;
 		.slot		= TRIGGER_SLOT,
 		.moveCall	= MoveToken,
 		.scale		= 1.0,
-	};
+	};//
     
     // due to these being very difficult to find, the tokens are scaled up by a tiny bit
     if(gTrackNum == TRACK_NUM_ATLANTIS){
-        def.scale = 2.0;
+        def.scale = 2.3;
     }
     else if(gTrackNum == TRACK_NUM_SCANDINAVIA){
-        def.scale = 1.25;
+        def.scale = 2.0;
     }
 	else if(gTrackNum == TRACK_NUM_ICE || gTrackNum == TRACK_NUM_DESERT){
-		def.scale = RandomFloat() * 1.13;
+		def.scale = RandomFloat() * 2.0;
 	}
     
 	newObj = MakeNewDisplayGroupObject(&def);
@@ -613,7 +733,7 @@ OGLPoint3D		where;
     int yScaleColBoxAddition = (def.scale + PI) * 2;
     
 	if(gDebugMode > 1){
-		printf("\n Token Scale: %.2f \n",def.scale);
+		//printf("\n Token Scale: %.2f \n",def.scale);
 	}
     
     //yScaleColBoxAddition
@@ -723,8 +843,8 @@ short	playerNum;
         PlayEffect_Parms3D(EFFECT_GETPOW, &theNode->Coord, NORMAL_CHANNEL_RATE, 2.0);
         
         //gPlayerInfo[playerNum].powType = RandomRange(0,POW_TYPE_ZAPPER);
-        gPlayerInfo[playerNum].powType = POW_TYPE_ZAPPER;
-        gPlayerInfo[playerNum].powQuantity = RandomRange(1,POW_TYPE_ZAPPER);
+        gPlayerInfo[playerNum].powType = RandomRange(POW_TYPE_ZAPPER,POW_TYPE_INVISIBILITY);
+        gPlayerInfo[playerNum].powQuantity = RandomRange(1,2);
         
         DeleteObject(theNode);
         return(false);
@@ -2360,18 +2480,33 @@ short	p;
 
 			/* PLAY SOUND */
 
-	if ((int)gPlayerInfo[p].stickyTiresTimer < 19)		// only if not recently
+	// mod: do not play sound if ANY special timers are greater than a value
+	if ((int)gPlayerInfo[p].stickyTiresTimer < 10 && (int)gPlayerInfo[p].superSuspensionTimer < 10 && (int)gPlayerInfo[p].invisibilityTimer < 10)
 	{
-		PlayEffect_Parms3D(EFFECT_CHANT, &theNode->Coord, NORMAL_CHANNEL_RATE-0x5000, 2.0);
+		// lower volume and randomize pitch of sound
+		// some variation has been added for the pitch here
+		short randomi = RandomRange(0,100);
+		if(randomi <= 10){
+			PlayEffect_Parms3D(EFFECT_CHANT, &theNode->Coord, NORMAL_CHANNEL_RATE-0x5000, 1.0); // the ported game version of pitch
+		}
+		else if(randomi >= 70){
+			PlayEffect_Parms3D(EFFECT_CHANT, &theNode->Coord, NORMAL_CHANNEL_RATE-0x3000, 1.0); // another added pitch variant
+		}
+		else{
+			PlayEffect_Parms3D(EFFECT_CHANT, &theNode->Coord, NORMAL_CHANNEL_RATE, 1.0);
+		}
 	}
 
 			/* DOUBLE STUFF */
 
-    // nah, 99+ stuff, and also addon 30 seconds instead of 20 of normal effects, plus add extra special invisibility for fun
+    // mod: 99+ stuff, and also addon 30 seconds instead of 20 of normal effects, plus add extra special timer resets
 	gPlayerInfo[p].powQuantity = 99;
 	gPlayerInfo[p].stickyTiresTimer = 30;
 	gPlayerInfo[p].superSuspensionTimer = 30;
-    gPlayerInfo[p].invisibilityTimer = 99;
+    gPlayerInfo[p].invisibilityTimer = 30;
+	gPlayerInfo[p].snowTimer = 0.0f;
+	gPlayerInfo[p].flamingTimer = 0.0f;
+	gPlayerInfo[p].zappedTimer = 0.0f;
 
 	return(true);
 }

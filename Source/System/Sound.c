@@ -876,6 +876,14 @@ uint32_t		lv2,rv2;
 
 	LoadedEffect* sound = &gLoadedEffects[effectNum];
 
+	// if a sound is not loaded, change it to a sound that is and report the error
+	if(!sound->sndHandle){
+		short oldEffectNum = effectNum;
+		effectNum = &gLoadedEffects[0];
+		sound = &gLoadedEffects[effectNum];
+		printf("WARN: sound effect %u was changed to %u because it was not loaded\n",oldEffectNum,effectNum);
+	}
+	
 	GAME_ASSERT_MESSAGE(effectNum >= 0 && effectNum < NUM_EFFECTS, "illegal effect number");
 	GAME_ASSERT_MESSAGE(sound->sndHandle, "effect wasn't loaded!");
 

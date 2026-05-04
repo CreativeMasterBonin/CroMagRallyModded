@@ -61,8 +61,16 @@ enum
 	PLAYER_ANIM_THROWBACKWARD
 };
 
-
-
+// new type car wheel
+typedef struct{
+	float tractionSingular;
+	float suspensionSingluar;
+	float scale;
+	bool efficientOnIce;
+	bool efficientOnGround;
+	bool efficientInWater;
+	int model;
+}CarWheelType;
 
 		/* CAR STATS */
 

@@ -36,21 +36,21 @@ enum
 {
 	POW_TYPE_NONE = -1,
 	POW_TYPE_BONE = 0,
-	POW_TYPE_OIL,
-	POW_TYPE_NITRO,
-	POW_TYPE_BIRDBOMB,
-	POW_TYPE_ROMANCANDLE,
-	POW_TYPE_BOTTLEROCKET,
-	POW_TYPE_TORPEDO,
-	POW_TYPE_FREEZE,
-	POW_TYPE_MINE,
-    POW_TYPE_ZAPPER, // implemented using token map item in non-tournament mode
-	POW_TYPE_WHIRLWIND, // not implemented yet (the desert spinning wind)
-	POW_TYPE_BEAM, // not implemented yet (the statue zappy thing beam)
-	POW_TYPE_INVISIBILITY, // invisibility has no respawnable form so here it is
-	POW_TYPE_SUPER_SUSPENSION, // super suspension has no respawnable form so here it is
-	POW_TYPE_STICKY_TIRES, // sticky tires has no respawnable form so here it is
-	POW_TYPE_CUSTOM, // unused slot
+	POW_TYPE_OIL = 1,
+	POW_TYPE_NITRO = 2,
+	POW_TYPE_BIRDBOMB = 3,
+	POW_TYPE_ROMANCANDLE = 4,
+	POW_TYPE_BOTTLEROCKET = 5,
+	POW_TYPE_TORPEDO = 6,
+	POW_TYPE_FREEZE = 7,
+	POW_TYPE_MINE = 8,
+    POW_TYPE_ZAPPER = 9, // implemented using token map item in non-tournament mode
+	POW_TYPE_WHIRLWIND = 10, // not implemented yet (the desert spinning wind)
+	POW_TYPE_BEAM = 11, // not implemented yet (the statue zappy thing beam)
+	POW_TYPE_INVISIBILITY = 12, // invisibility has no respawnable form so here it is
+	POW_TYPE_SUPER_SUSPENSION = 13, // super suspension has no respawnable form so here it is
+	POW_TYPE_STICKY_TIRES = 14, // sticky tires has no respawnable form so here it is
+	POW_TYPE_CUSTOM = 15, // unused slot
 
 	MAX_POW_TYPES
 };

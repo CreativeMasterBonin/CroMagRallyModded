@@ -178,6 +178,11 @@ CollisionBoxType *boxPtr;
 float			y,d;
 OGLMatrix3x3	m;
 OGLPoint2D		p,p1,p2;
+	
+	// do not allow finish lines to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 static const float xOff[] =
 {
@@ -224,6 +229,7 @@ static const float diameter[] =
 		.scale 	    = 1,
 	};
 	def.coord.y 	= y = GetMinTerrainY(x,z, def.group, def.type, 1.0),
+	
 	newObj = MakeNewDisplayGroupObject(&def);
 	if (newObj == nil)
 		return(false);
@@ -382,6 +388,14 @@ static void MoveAtlantisStartline(ObjNode *theNode)
 Boolean AddTree(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL && gTrackNum != TRACK_NUM_AZTEC){
+		return(false);
+	}
+	
+	
 static const short types[NUM_TRACKS][4] =
 {
 	[TRACK_NUM_DESERT]      = {0,0,0,0},
@@ -484,6 +498,10 @@ Boolean AddVine(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
 
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -515,6 +533,10 @@ Boolean AddEasterHead(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
 
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -567,6 +589,13 @@ typedef struct
 Boolean AddPillar(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL && gTrackNum != TRACK_NUM_COLISEUM){
+		return(false);
+	}
+	
 static const ColumnInfo info[NUM_TRACKS] =
 {
 	[TRACK_NUM_DESERT] =
@@ -715,6 +744,11 @@ short	type = itemPtr->parm[0];
 Boolean AddPylon(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 
 	NewObjectDefinitionType def =
@@ -751,6 +785,11 @@ Boolean AddBoat(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
 Boolean	collision = true;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 
 	NewObjectDefinitionType def =
@@ -830,6 +869,13 @@ Boolean	collision = true;
 Boolean AddStatue(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
+	
 static const short types[NUM_TRACKS][2] =
 {
 	[TRACK_NUM_DESERT]      = {0,0},
@@ -924,6 +970,11 @@ ObjNode	*newObj;
 Boolean AddSign(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL && gTrackNum != TRACK_NUM_RAMPS){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -965,6 +1016,11 @@ ObjNode	*newObj;
 Boolean AddStump(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -999,6 +1055,10 @@ Boolean AddVikingFlag(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
 
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -1034,6 +1094,11 @@ ObjNode	*newObj;
 Boolean AddWeaponsRack(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -1068,6 +1133,11 @@ ObjNode	*newObj;
 Boolean AddBaracade(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -1104,6 +1174,10 @@ Boolean AddRock(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
 
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -1145,6 +1219,11 @@ ObjNode	*newObj;
 Boolean AddBrontoNeck(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -1470,6 +1549,11 @@ short	type = itemPtr->parm[0];
 Boolean AddWell(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -1507,6 +1591,11 @@ ObjNode	*newObj;
 Boolean AddClock(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 	NewObjectDefinitionType def =
 	{
@@ -1885,6 +1974,11 @@ OGLPoint3D			p;
 Boolean AddTorchPot(TerrainItemEntryType *itemPtr, long  x, long z)
 {
 ObjNode	*newObj;
+	
+	// do not allow certain objects to ever appear in 'battle' modes
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		return(false);
+	}
 
 
 	NewObjectDefinitionType def =

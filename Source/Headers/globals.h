@@ -18,12 +18,13 @@
 			/* SOME FLOATING POINT HELPERS */
 
 #define EPS .0001					// a very small number which is useful for FP compares close to 0
-
-#define GAME_CLAMP(x, lo, hi) ( (x) < (lo) ? (lo) : ( (x) > (hi) ? (hi) : (x) ) )
-#define GAME_MIN(a, b) ( (a) < (b) ? (a) : (b) )
-#define GAME_MAX(a, b) ( (a) > (b) ? (a) : (b) )
-#define	SQUARED(x)					((x)*(x))
-
+// mod: described these macros and added a few handy ones
+#define GAME_CLAMP(x, lo, hi) ( (x) < (lo) ? (lo) : ( (x) > (hi) ? (hi) : (x) ) ) // clamp value macro
+#define GAME_MIN(a, b) ( (a) < (b) ? (a) : (b) ) // minimum value macro
+#define GAME_MAX(a, b) ( (a) > (b) ? (a) : (b) ) // maximum value macro
+#define	SQUARED(x)					((x)*(x)) // squared value of input macro
+#define GAME_LERP(a,b,c) (a * (1.0f - c)) + (b * c) //inefficient from-to lerping macro (ONLY FOR FLOATS)
+#define GAME_CONVERT_RANGE_TO_OTHER(value,oldMin,oldMax,newMin,newMax) ( (value - oldMin) / (oldMax - oldMin) * (newMax - newMin) + newMin ) // useful convert range to other macro
 
 		/*******************/
 		/* 2D ARRAY MACROS */

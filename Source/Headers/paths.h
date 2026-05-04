@@ -6,7 +6,13 @@
 #define __PATHS__
 
 
-#define	MAX_VECTORS_PER_SUPERTILE	16
+#define	MAX_VECTORS_PER_SUPERTILE	256 // was 16, this is intended for custom pathing
+
+typedef struct{
+	float pointsX;
+	float pointsZ;
+	short associatedTrackNum;
+}PredefinedPath;
 
 typedef	struct
 {
@@ -72,6 +78,7 @@ enum
 void AssignPathVectorsToSuperTileGrid(void);
 void DisposePathGrid(void);
 Boolean CalcPathVectorFromCoord(float x, float y, float z, OGLVector2D *outVec);
+Boolean FindClosestPointAndMakeVector(float x, float y, float z, OGLVector2D *outVec); // used for non-pathed maps
 
 
 

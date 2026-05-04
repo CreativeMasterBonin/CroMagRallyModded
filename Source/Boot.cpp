@@ -2,8 +2,10 @@
 // (C) 2022 Iliyas Jorio
 // This file is part of Cro-MagRally. https://github.com/jorio/cromagrally
 
-// 2024 Modded CMR Game by rk8 (codename). this is a derivative of an original work under the CC A-NC-SA 4.0 IPL.
+// 2026 Modded CMR Game 3.0.2. this is a derivative of an original work under the CC A-NC-SA 4.0 IPL.
 // Internal info about code: Some C files have been either changed a lot or a little. Look around to see the new stuff and new additional data that makes it possible! There are some C+ files here and there that were already included, and not added by this mod. Some commented out code is original while others are unused tests or features from the official version of the port which are unused, like Internet features or special params for rendering and such.
+
+// CMB does not claim credits on anything as this game was made by Pangea Software originally and ported by Iliyas Jorio.
 
 #include <SDL.h>
 #include "Pomme.h"
@@ -108,6 +110,8 @@ static void ParseCommandLine(int argc, char** argv)
 			gCommandLine.car = atoi(argv[i + 1]);
 			i += 1;
 		}
+		else if(argument == "--battlemode")
+			gGameModeIsForCPUs = true; // specify to load in battle mode
 		else if (argument == "--stats")
 			gDebugMode = 1;
 		else if (argument == "--no-vsync")

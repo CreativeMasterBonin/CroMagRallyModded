@@ -36,7 +36,16 @@ static void ExplodeTorpedo(ObjNode *theBullet, const OGLPoint3D *where);
 static void MoveFreezeWeapon(ObjNode *theNode);
 static void MoveLandMine(ObjNode *theNode);
 static void DropLandMine(short playerNum);
+static void CreateWhirlwind(short playerNum);
+static void MoveWhirlwindHazard(ObjNode *theNode);
 
+static void ShootBeam(ObjNode *theNode);
+static void BeamAttack(ObjNode *attacker, short playerNum, float dist);
+
+// basic inaccurate lerping
+float PlayerWeaponLerpFloat(float from, float to, float delta){
+	return (from * (1.0f - delta)) + (to * delta);
+}
 
 /****************************/
 /*    CONSTANTS             */
@@ -73,6 +82,9 @@ static void DropLandMine(short playerNum);
 static const OGLPoint3D	gGunNozzelOff = {0,0,0};
 
 #define	MineArmingTimer		SpecialF[0]
+
+#define WhirlwindDestroyTimer SpecialF[1] // whirlwind removal timer
+#define	WhirlWindDustTimer		SpecialF[0] // whirlwind particles timer
 
 
 /******************* CHECK POWERUP CONTROLS ************************/
@@ -257,13 +269,15 @@ short		powType;
 			break;
 		
 		case 	POW_TYPE_WHIRLWIND:
-				NoActionItem(playerNum);
+			NoActionItem(playerNum);
+			CreateWhirlwind(playerNum);
 			if(gPlayerInfo[playerNum].powQuantity < 0)
 				gPlayerInfo[playerNum].powQuantity = 0;
 			break;
 		
 		case 	POW_TYPE_BEAM:
-				NoActionItem(playerNum);
+			NoActionItem(playerNum);
+			ShootBeam(gPlayerInfo[playerNum].objNode);
 			if(gPlayerInfo[playerNum].powQuantity < 0)
 				gPlayerInfo[playerNum].powQuantity = 0;
 			break;
@@ -2116,12 +2130,372 @@ Boolean DoTrig_LandMine(ObjNode *theNode, ObjNode *whoNode, Byte sideBits)
 	return(false);
 }
 
+// shoot a beam like the statues do in Crete at other players
+static void BeamAttack(ObjNode *attacker, short playerNum, float dist){
+	int		numSegments,particleGroup, i,p, particlesPerSegment;
+	float	x,y,z;
+	OGLPoint3D	endPoints[20];
+	OGLVector3D	boltVector;
+	NewParticleGroupDefType	groupDef;
+	NewParticleDefType	newParticleDef;
+	OGLVector3D			d;
+	OGLPoint3D			pt;
+
+		x = attacker->Coord.x;
+		y = attacker->Coord.y + 1000.0f;
+		z = attacker->Coord.z;
+
+		numSegments = dist * .005;									// calc # bolt segments based on distance to player
+		if (numSegments > 20)
+			numSegments = 20;
+		if (numSegments < 2)
+			numSegments = 2;
+
+			/***********************/
+			/* CALCULATE ENDPOINTS */
+			/***********************/
+
+			/* CALC VECTOR FROM GODDESS TO PLAYER */
+
+		boltVector.x = (gPlayerInfo[playerNum].coord.x + RandomFloat2() * 300.0f) - x;
+		boltVector.y = gPlayerInfo[playerNum].coord.y - y;
+		boltVector.z = (gPlayerInfo[playerNum].coord.z + RandomFloat2() * 300.0f) - z;
+
+		boltVector.x /= (float)(numSegments-1);							// divide vector length for multiple segments
+		boltVector.y /= (float)(numSegments-1);
+		boltVector.z /= (float)(numSegments-1);
+
+
+			/* SET STARTING POINT */
+
+		endPoints[0].x = attacker->Coord.x;
+		endPoints[0].y = attacker->Coord.y + 1000.0f;
+		endPoints[0].z = attacker->Coord.x;
+
+
+			/* CALC INTERMEDIATE & END POINTS */
+
+		for (i = 1; i < numSegments; i++)
+		{
+			x += boltVector.x;										// calc linear endpoint value
+			y += boltVector.y;
+			z += boltVector.z;
+
+			endPoints[i].x = x + RandomFloat2() * 100.0f;			// randomize it
+			endPoints[i].y = y + RandomFloat2() * 100.0f;
+			endPoints[i].z = z + RandomFloat2() * 100.0f;
+		}
+
+
+			/****************************************/
+			/* CREATE PARTICLES ALONG BOLT SEGMENTS */
+			/****************************************/
+
+					/* MAKE NEW PARTICLE GROUP */
+
+		groupDef.magicNum				= 0;
+		groupDef.type					= PARTICLE_TYPE_FALLINGSPARKS;
+		groupDef.flags					= 0;
+		groupDef.gravity				= 0;
+		groupDef.magnetism				= 0;
+		groupDef.baseScale				= 25;
+		groupDef.decayRate				=  .6;
+		groupDef.fadeRate				= 1.0;
+		groupDef.particleTextureNum		= PARTICLE_SObjType_GreenFire;
+		groupDef.srcBlend				= GL_SRC_ALPHA;
+		groupDef.dstBlend				= GL_ONE;
+		particleGroup 					= NewParticleGroup(&groupDef);
+		if (particleGroup == -1)
+			return;
+
+					/* BUILD PARTICLES */
+
+		particlesPerSegment = MAX_PARTICLES / numSegments;
+
+		for (i = 0; i < (numSegments-1); i++)											// do each segment
+		{
+			pt.x = endPoints[i].x;															// get start coord of segment
+			pt.y = endPoints[i].y;
+			pt.z = endPoints[i].z;
+
+			boltVector.x = (endPoints[i+1].x - pt.x) / particlesPerSegment;				// calc vector to next endpoint
+			boltVector.y = (endPoints[i+1].y - pt.y) / particlesPerSegment;
+			boltVector.z = (endPoints[i+1].z - pt.z) / particlesPerSegment;
+
+			for (p = 0; p < particlesPerSegment; p++)
+			{
+				d.x = RandomFloat2() * 40.0f;
+				d.y = RandomFloat2() * 40.0f;
+				d.z = RandomFloat2() * 40.0f;
+
+
+				newParticleDef.groupNum		= particleGroup;
+				newParticleDef.where		= &pt;
+				newParticleDef.delta		= &d;
+				newParticleDef.scale		= RandomFloat() + 1.0f;
+				newParticleDef.rotZ			= 0;
+				newParticleDef.rotDZ		= 0;
+				newParticleDef.alpha		= 1.0;
+				AddParticleToGroup(&newParticleDef);
+
+				pt.x += boltVector.x;
+				pt.y += boltVector.y;
+				pt.z += boltVector.z;
+			}
+		}
+
+			/*****************************/
+			/* PUT EXPLOSION AT ENDPOINT */
+			/*****************************/
+
+		pt = endPoints[numSegments-1];
+
+		MakeSparkExplosion(pt.x, pt.y, pt.z, 500.0, PARTICLE_SObjType_WhiteSpark);
+		BlastCars(playerNum, pt.x, pt.y, pt.z, 300.0); // make it so the player who activated the power is the one who threw the blast
+
+
+			/* PLAY CANNON SOUND AT IMPACT POINT */
+
+		PlayEffect_Parms3D(EFFECT_CANNON, &pt, NORMAL_CHANNEL_RATE * 3/4, 2.0f);
+
+
+			/* PLAY QUIETER CANNON SOUND AT ORIGIN */
+			// Cannon sound has steep volume falloff, so we may not hear impact sound if standing close to goddess
+
+		PlayEffect_Parms3D(EFFECT_CANNON, &attacker->Coord, NORMAL_CHANNEL_RATE * 3/4, 0.66f);
+}
+
+// only if the player being targetted is not the attacker is ever beamed by the weapon
+static void ShootBeam(ObjNode *theNode){
+	float dist = 32.0f;
+	
+	short p = FindClosestPlayer(theNode, theNode->Coord.x, theNode->Coord.z, 32000, true, &dist);
+	if (p != -1){
+		if(gDebugMode > 1){
+			//printf("Is computer player to attack: %u \n",gPlayerInfo[p].isComputer);
+		}
+		// found a player, attack!
+		if(gPlayerInfo[p].isComputer){
+			BeamAttack(theNode, p, dist);
+		}
+		else{
+			if(gPlayerInfo[p].objNode->PlayerNum != theNode->PlayerNum){
+				BeamAttack(theNode, p, dist);
+			}
+			else{
+				PlayEffect_Parms3D(EFFECT_BADSELECT, &theNode->Coord, NORMAL_CHANNEL_RATE * 3/4, 2.0f);
+			}
+		}
+	}
+	else{
+		// failed attack, so play the bad sound
+		PlayEffect_Parms3D(EFFECT_BADSELECT, &theNode->Coord, NORMAL_CHANNEL_RATE * 3/4, 2.0f);
+	}
+}
 
 
 
 
+// slowly moves the whirlwind by a bit from the position of the attacker, and is like oil or bone bombs where the thrower is not entirely immune to it
+static void MoveWhirlwindHazard(ObjNode *theNode)
+{
+	int				particleGroup,magicNum;
+	
+	if(theNode != nil){
+		GetObjectInfo(theNode);
 
+		ApplyFrictionToDeltas(gFramesPerSecond * 75.0f, &gDelta);			// air friction
 
+		gDelta.y -= 800.0f * gFramesPerSecond;								// gravity
+		
+		// prevent still whirlwinds
+		if(gDelta.x == 0.0000f){
+			gDelta.x = 0.8000f + RandomFloat() * -.3f;
+		}
+		if(gDelta.z == 0.0000f){
+			gDelta.z = 0.8000f + RandomFloat() * -.3f;
+		}
+		// clamp the values
+		GAME_CLAMP(gDelta.x,-0.8000,0.8000);
+		GAME_CLAMP(gDelta.z,-0.8000,0.8000);
+		
+		if(gDebugMode > 1){
+			//printf("Node deltas are X:%.2f Z:%.2f\n",gDelta.x,gDelta.z);
+		}
 
+		gCoord.x += gDelta.x * gFramesPerSecondFrac;								// move it
+		gCoord.y += gDelta.y * gFramesPerSecondFrac;
+		gCoord.z += gDelta.z * gFramesPerSecondFrac;
+		
+		if(gDebugMode > 1){
+			//printf("Node is at: %.2f | %.2f \n",theNode->Coord.x,theNode->Coord.z);
+		}
 
+		theNode->Rot.z += gFramesPerSecond * 10.0f;
+			/***********************/
+			/* SEE IF HIT ANYTHING OR TIMER IS UP */
+			/***********************/
+		theNode->WhirlwindDestroyTimer -= gFramesPerSecondFrac; // decrement timer
+		if (theNode->WhirlwindDestroyTimer <= 0.0f ||
+			DoSimplePointCollision(&gCoord, CTYPE_MISC|CTYPE_PLAYER|CTYPE_LIQUID, (ObjNode *)theNode->WhoThrew)) // if hit a player or destroy timer
+		{
+			int i = 0;
+			for (i = 0; i < gNumTotalPlayers; i++)
+			{
+				ObjNode	*playerObj;
+				
+				// make sure the player is not already high up
+				if (gPlayerInfo[i].distToFloor > 520.0f)
+					continue;
+				else{
+					break;
+				}
+				// make sure in range
+				if (CalcQuickDistance(theNode->Coord.x,theNode->Coord.z, gPlayerInfo[i].coord.x, gPlayerInfo[i].coord.z) > 900.0f)
+					continue;
+				else{
+					break;
+				}
 
+				playerObj = gPlayerInfo[i].objNode;// get player obj node
+
+				playerObj->Delta.y += 5400.0f * gFramesPerSecondFrac; // weaker up delta
+
+				playerObj->DeltaRot.y += 3.0f * gFramesPerSecondFrac; // the weapon form is weaker than the track hazard
+			}
+			
+			MakeFireExplosion(gCoord.x, gCoord.z, &gDelta);
+			DeleteObject(theNode);
+			if(gDebugMode > 1){
+				//printf("Removed whirlwind node\n");
+			}
+			return;
+		}
+		
+		// play the wind sound at the whirlwind coords
+		if (theNode->EffectChannel != -1){
+			Update3DSoundChannel(EFFECT_DUSTDEVIL, &theNode->EffectChannel, &theNode->Coord);
+		}
+		else{
+			theNode->EffectChannel = PlayEffect_Parms3D(EFFECT_DUSTDEVIL, &theNode->Coord, 0x10000, 1.4);
+		}
+		// low fps = no particles
+		if(gFramesPerSecond <= 20.0f){
+			UpdateObject(theNode);
+			return;
+		}
+		else{
+			// fps is good, so decrement particle timer and do particle loop
+			theNode->WhirlWindDustTimer -= gFramesPerSecondFrac;
+			if(theNode->WhirlWindDustTimer <= 0.0f){
+				theNode->WhirlWindDustTimer += 0.4f;
+				particleGroup = theNode->ParticleGroup;
+				magicNum = theNode->ParticleMagicNum;
+				
+				// same as desert version, but with FIRE
+				if ((particleGroup == -1) || (!VerifyParticleGroupMagicNum(particleGroup, magicNum))){
+					NewParticleGroupDefType	groupDef;
+
+					theNode->ParticleMagicNum = magicNum = MyRandomLong();			// generate a random magic num
+
+					groupDef.magicNum				= magicNum;
+					groupDef.type					= PARTICLE_TYPE_GRAVITOIDS;
+					groupDef.flags					= 0;
+					groupDef.gravity				= -25;
+					groupDef.magnetism				= 0;
+					groupDef.baseScale				= 72;
+					groupDef.decayRate				=  0;
+					groupDef.fadeRate				= 0.2;
+					groupDef.particleTextureNum		= PARTICLE_SObjType_RedSpark; // fire particles
+					groupDef.srcBlend				= GL_SRC_ALPHA_SATURATE; // saturated alpha
+					groupDef.dstBlend				= GL_ONE_MINUS_SRC_ALPHA;
+					theNode->ParticleGroup = particleGroup = NewParticleGroup(&groupDef);
+				}
+				
+				if (particleGroup != -1)
+				{
+					NewParticleDefType	newParticleDef;
+					OGLVector3D			d;
+					OGLPoint3D			p;
+					
+					int i = 0;
+					float x = theNode->Coord.x;
+					float z = theNode->Coord.z;
+					
+					// actually assign the new particles their values
+					for (i = 0; i < 4; i++)
+					{
+						p.x = x + RandomFloat2() * 150.0f;
+						p.y = theNode->Coord.y + RandomFloat() * 500.0f;
+						p.z = z + RandomFloat2() * 150.0f;
+
+						d.x = RandomFloat2() * 500.0f;
+						d.y = RandomFloat() * 300.0f;
+						d.z = RandomFloat2() * 500.0f;
+
+						newParticleDef.groupNum		= particleGroup;
+						newParticleDef.where		= &p;
+						newParticleDef.delta		= &d;
+						newParticleDef.scale		= RandomFloat() + 1.357f;
+						newParticleDef.rotZ			= RandomFloat() * PI2;
+						newParticleDef.rotDZ		= (RandomFloat()-.5f) * 2.0f;
+						newParticleDef.alpha		= 1.0;
+						if (AddParticleToGroup(&newParticleDef))
+						{
+							theNode->ParticleGroup = -1;
+							break;
+						}
+					}
+				}
+			}
+			UpdateObject(theNode);
+		}
+	}
+}
+
+// whirlwind powerup
+static void CreateWhirlwind(short playerNum)
+{
+ObjNode	*newObj;
+	
+	ObjNode* car;
+	ObjNode* head;
+	car = gPlayerInfo[playerNum].objNode;
+	head = gPlayerInfo[playerNum].headObj;
+	
+	NewObjectDefinitionType def =
+	{
+		.group		= MODEL_GROUP_GLOBAL,
+		.type		= GLOBAL_ObjType_GreyRock,
+		.animNum	= 0,
+		.coord.x	= gPlayerInfo[playerNum].coord.x,
+		.coord.z	= gPlayerInfo[playerNum].coord.z,
+		.coord.y	= GetTerrainY(gPlayerInfo[playerNum].coord.x, gPlayerInfo[playerNum].coord.z) + 1.2371f,
+		.flags		= STATUS_BIT_NOLIGHTING|STATUS_BIT_GLOW|STATUS_BIT_NOFOG|STATUS_BIT_AIMATCAMERA, // we want the model to be noticeable, and have no effects applied to it otherwise
+		.slot		= FENCE_SLOT+2,
+		.rot		= car->Rot.y,
+		.moveCall	= MoveWhirlwindHazard,
+		.scale		= 2.0
+	};
+	
+	FindCoordOnJointAtFlagEvent(head, 5, &gGunNozzelOff, &def.coord); // ?
+
+	newObj = MakeNewDisplayGroupObject(&def); // make the display model (the thing you see which is also the 'object' in question that is the 'weapon')
+	
+	newObj->ColorFilter.a = 0.75f;
+	if (newObj != nil){
+		newObj->ParticleGroup = -1;										// no particle group yet
+		newObj->EffectChannel = -1;									// no sound yet
+		newObj->CType = CTYPE_AVOID;									// CPU cars should avoid this
+		newObj->WhirlwindDestroyTimer = 1.0f + RandomFloat() * 3.0f; // randomize time whirlwind can exist
+		AttachShadowToObject(newObj, SHADOW_TYPE_CIRCULAR, 10.0,10.0, true); // attach shadow to object
+		
+		if(car->Delta.x == 0.0f || car->Delta.z == 0.0f){
+			SetThrowDeltas(newObj, car, 0.6, true);
+		}
+		else{
+			SetThrowDeltas(newObj, car, 0.3, true);
+		}
+		newObj->WhoThrew = (Ptr)car;
+	}
+}

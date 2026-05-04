@@ -76,6 +76,17 @@ static void OnChangeSilenceAnnouncer(const MenuItem* mi){
 		
 	}
 }
+
+// this is called when randomized items is toggled in the menu
+static void OnChangeRandomizedItems(const MenuItem* mi){
+	if(gGamePrefs.randomizedItems){
+		
+	}
+	else{
+		
+	}
+}
+
 // this should only be called by settings where nothing should happen after being changed
 static void OnChangeSettingNOP(const MenuItem* mi){
 	// ???
@@ -147,6 +158,15 @@ const MenuItem gSettingsMenuTree[] =
 		.cycler=
 		{
 			.valuePtr=&gGamePrefs.cpusAreSubs,
+			.choices={ {STR_OFF, 0}, {STR_ON, 1} },
+		},
+	},
+	{
+		kMICycler1, STR_RANDOMIZED_ITEMS,
+		.callback=OnChangeRandomizedItems,
+		.cycler=
+		{
+			.valuePtr=&gGamePrefs.randomizedItems,
 			.choices={ {STR_OFF, 0}, {STR_ON, 1} },
 		},
 	},

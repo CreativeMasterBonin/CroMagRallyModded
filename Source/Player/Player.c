@@ -132,19 +132,30 @@ short	i;
 
 			/* SEE HOW MANY PLAYERS IN GAME */
 
-	switch(gGameMode)
-	{
-		case	GAME_MODE_PRACTICE:
-		case	GAME_MODE_TOURNAMENT:
-//		case	GAME_MODE_MULTIPLAYERRACE:
-				gNumTotalPlayers = MAX_PLAYERS;                 // use them all
-				break;
+	// if the game mode is in cpus mode, then all cpus can join in, otherwise, do not let cpus be in the game
+	if(gGameModeIsForCPUs){
+		if(gGameMode != GAME_MODE_MULTIPLAYERRACE){
+			gNumTotalPlayers = MAX_PLAYERS;
+		}
+		else{
+			gNumTotalPlayers = gNumRealPlayers;
+		}
+	}
+	else{
+		switch(gGameMode)
+		{
+			case	GAME_MODE_PRACTICE:
+			case	GAME_MODE_TOURNAMENT:
+	//		case	GAME_MODE_MULTIPLAYERRACE:
+					gNumTotalPlayers = MAX_PLAYERS;                 // use them all
+					break;
 
-		default:
-				gNumTotalPlayers = gNumRealPlayers;				// no CPU players in battle modes
-				break;
+			default:
+					gNumTotalPlayers = gNumRealPlayers;				// no CPU players in battle modes
+					break;
 
 
+		}
 	}
 }
 
@@ -196,37 +207,69 @@ Boolean	taken[NUM_LAND_CAR_TYPES];
 	{
         // mod: set CPU vehicle types per difficulty
         // mod: allow CPU vehicles to be cheatsy more often to give them an advantage due to bad AI logic
+		// mod: in battle mode, cpus can check to see if they are faster or slower than the player, and pick the car that fits best for the scenario, with randomization
 		if (gPlayerInfo[i].isComputer){
-            gPlayerInfo[i].carStats = gPlayerInfo[i].carStatsCopy; // reset every time cars for CPUs are picked
-            
-            if (gGamePrefs.difficulty == DIFFICULTY_HARD){
-                gPlayerInfo[i].vehicleType = RandomRange(6, type); // duplicate cars
-				// even more fun, make the cpus check if the first player has a chariot, and if so, take the advantage and copy it-ish
-				if(gPlayerInfo[0].vehicleType == CAR_TYPE_CHARIOT){
-					gPlayerInfo[i].vehicleType = RandomRange(CAR_TYPE_CATAPULT,CAR_TYPE_CHARIOT);
+			gPlayerInfo[i].carStats = gPlayerInfo[i].carStatsCopy; // reset car stats everytime cpus are loaded
+			if(gGameModeIsForCPUs){
+				if(gGamePrefs.difficulty >= DIFFICULTY_MEDIUM){
+					// randomize car stats in battle mode
+					gPlayerInfo[i].carStats.acceleration += RandomRange(200,300);
+					gPlayerInfo[i].carStats.maxSpeed += RandomRange(100,200);
+					gPlayerInfo[i].carStats.suspension += RandomRange(50,90);
+					gPlayerInfo[i].carStats.tireTraction += RandomRange(25,45);
+					gPlayerInfo[i].carStats.airFriction = 0;//RandomRange(0,700); // no friction?
+					gPlayerInfo[i].carStats.minPlaningAngle = 15;
+					gPlayerInfo[i].carStats.minPlaningSpeed = 1;
+					
+					if(gPlayerInfo[0].vehicleType < CAR_TYPE_LOG){
+						gPlayerInfo[i].vehicleType = RandomRange(CAR_TYPE_MAMMOTH,CAR_TYPE_GEODE);
+					}
+					else if(gPlayerInfo[0].vehicleType >= CAR_TYPE_LOG && gPlayerInfo[0].vehicleType < CAR_TYPE_TROJANHORSE){
+						gPlayerInfo[i].vehicleType = RandomRange(CAR_TYPE_LOG,CAR_TYPE_ROCK);
+					}
+					else{
+						gPlayerInfo[i].vehicleType = RandomRange(CAR_TYPE_TROJANHORSE,CAR_TYPE_CHARIOT);
+					}
 				}
-                // modify the CPU's cars to be more fun
-                gPlayerInfo[i].carStats.acceleration += RandomRange(17,35);
-                gPlayerInfo[i].carStats.maxSpeed += RandomRange(20,36);
-                gPlayerInfo[i].carStats.suspension += RandomRange(10,15);
-                gPlayerInfo[i].carStats.tireTraction += RandomRange(14,27);
-            }
-            else if(gGamePrefs.difficulty == DIFFICULTY_MEDIUM){
-                gPlayerInfo[i].vehicleType = RandomRange(3, type); // only level 3+ cars allowed
-                gPlayerInfo[i].carStats.suspension += RandomRange(20,50);
-                gPlayerInfo[i].carStats.tireTraction += RandomRange(27,39);
-            }
-            else if(gGamePrefs.difficulty == DIFFICULTY_EASY){
-                gPlayerInfo[i].vehicleType = RandomRange(0, 5); // only simplistic to level 5 cars allowed
-            }
-            else if(gGamePrefs.difficulty == DIFFICULTY_SIMPLISTIC){
-                gPlayerInfo[i].vehicleType = RandomRange(0, 1); // only the first 2 simplistic cars allowed
-            } // mod: not sure how you'd get another difficulty mode, but if so, pick vehicles that haven't been taken yet...
+				else{
+					if(gGamePrefs.difficulty == DIFFICULTY_EASY){
+						gPlayerInfo[i].vehicleType = RandomRange(CAR_TYPE_MAMMOTH,CAR_TYPE_TURTLE);
+					}
+					else{
+						gPlayerInfo[i].vehicleType = CAR_TYPE_MAMMOTH;
+					}
+				}
+			}
 			else{
-				while(taken[type])										// skip over vehicles already used by Humans
-					type--;
+				if (gGamePrefs.difficulty == DIFFICULTY_HARD){
+					gPlayerInfo[i].vehicleType = RandomRange(6, type); // duplicate cars
+					// even more fun, make the cpus check if the first player has a chariot, and if so, take the advantage and copy it-ish
+					if(gPlayerInfo[0].vehicleType == CAR_TYPE_CHARIOT){
+						gPlayerInfo[i].vehicleType = RandomRange(CAR_TYPE_CATAPULT,CAR_TYPE_CHARIOT);
+					}
+					// modify the CPU's cars to be more fun
+					gPlayerInfo[i].carStats.acceleration += RandomRange(17,35);
+					gPlayerInfo[i].carStats.maxSpeed += RandomRange(20,36);
+					gPlayerInfo[i].carStats.suspension += RandomRange(10,15);
+					gPlayerInfo[i].carStats.tireTraction += RandomRange(14,27);
+				}
+				else if(gGamePrefs.difficulty == DIFFICULTY_MEDIUM){
+					gPlayerInfo[i].vehicleType = RandomRange(3, type); // only level 3+ cars allowed
+					gPlayerInfo[i].carStats.suspension += RandomRange(20,50);
+					gPlayerInfo[i].carStats.tireTraction += RandomRange(27,39);
+				}
+				else if(gGamePrefs.difficulty == DIFFICULTY_EASY){
+					gPlayerInfo[i].vehicleType = RandomRange(0, 5); // only simplistic to level 5 cars allowed
+				}
+				else if(gGamePrefs.difficulty == DIFFICULTY_SIMPLISTIC){
+					gPlayerInfo[i].vehicleType = RandomRange(0, 1); // only the first 2 simplistic cars allowed
+				} // mod: not sure how you'd get another difficulty mode, but if so, pick vehicles that haven't been taken yet...
+				else{
+					while(taken[type])										// skip over vehicles already used by Humans
+						type--;
 
-				gPlayerInfo[i].vehicleType = type--;
+					gPlayerInfo[i].vehicleType = type--;
+				}
 			}
 		}
 		
@@ -763,10 +806,25 @@ void PlayerLoseHealth(short p, float damage)
 		gPlayerInfo[p].health = 0;
 		gPlayerInfo[p].isEliminated = true;
 		gNumPlayersEliminated++;
+		
+		// special case for cpu play (you have to defeat the cpus to win)
+		if(gGameModeIsForCPUs){
+			if(!gPlayerInfo[p].isComputer){
+				if(gNumPlayersEliminated < (gNumTotalPlayers-1)){
+					ShowWinLose(p,0,0);
+				}
+				else{
+					ShowWinLose(p,1,0);
+				}
+			}
+			return;
+		}
 
 		if (gNumPlayersEliminated < (gNumTotalPlayers-1))		// if more than 1 player remaining, then post ELIMINATED message
 		{
-			ShowWinLose(p, 0, 0);								// this player is eliminated
+			if(!gPlayerInfo[p].isComputer){
+				ShowWinLose(p, 0, 0);								// this player is eliminated
+			}
 		}
 	}
 }

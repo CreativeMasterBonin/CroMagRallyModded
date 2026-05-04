@@ -1049,10 +1049,9 @@ float	x,y,z;
 
 	x += gPlayerInfo[p].pathVec.x * 200.0f;
 	z += gPlayerInfo[p].pathVec.y * 200.0f;
+	
 	glVertex3f(x, y, z);
 	glEnd();
-
-
 }
 
 

@@ -319,6 +319,12 @@ void SetAnnouncerSilenceMode(){
 	}
 }
 
+void SetRandomizedItemsSetting(){
+	if(gGamePrefs.randomizedItems){
+		// ?
+	}
+}
+
 // if a setting is a no-operation type and should do nothing post-change
 void SetSettingNOP(){
 	// ???

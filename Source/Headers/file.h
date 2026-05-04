@@ -81,6 +81,7 @@ typedef struct
 	Boolean silenceAnnouncer; // make the voice be quiet
 	Boolean superSubMode; // enable the sub in normal tracks
 	Boolean cpusAreSubs; // enable CPU subs in normal tracks
+	Boolean randomizedItems; // enable item randomization, where all map items are shuffled in type, with new kinds also appearing with custom models
 }PrefsType;
 
 #define PREFS_FOLDER_NAME "CroMagRally"

@@ -9,6 +9,7 @@ void DisposeAllSpriteGroups(void);
 void DisposeSpriteGroup(int groupNum);
 ObjNode *MakeSpriteObject(NewObjectDefinitionType *newObjDef);
 void ModifySpriteObjectFrame(ObjNode *theNode, short type);
+void ModifySpriteObjectFrameColor(ObjNode *theNode, float red, float green, float blue, float alpha); // modify a sprite color
 void LoadSpriteGroup(int groupNum, const char* atlasName, int flags);
 const AtlasGlyph* GetSpriteInfo(int groupNum, int spriteNum);
 

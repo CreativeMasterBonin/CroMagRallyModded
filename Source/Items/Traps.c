@@ -41,18 +41,6 @@ static void MoveDart(ObjNode *theNode);
 static void MoveDragon(ObjNode *theNode);
 static void MoveTroll(ObjNode *theNode);
 
-// basic inaccurate lerping functions
-float LerpFloat(float from, float to, float delta){
-	return (from * (1.0f - delta)) + (to * delta);
-}
-double LerpDouble(double from, double to, double delta){
-	return from + delta * (to - from);
-}
-int LerpInt(int from, int to, int delta){
-	return from + delta * (to - from);
-}
-
-
 /****************************/
 /*    CONSTANTS             */
 /****************************/
@@ -200,21 +188,21 @@ int				particleGroup,magicNum;
 	if(gGamePrefs.difficulty == DIFFICULTY_HARD){
 		if(baseObj->InitCoord.x == 200000 && baseObj->InitCoord.z == 74300){ // coords are the whirlwind right after the end of first big area and next to bone item before curve into first twisty area
 			if(gPlayerInfo->lapNum >= 2){
-				baseObj->Coord.x = LerpFloat(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac + (0.1f + gUserPhysics.carStats->speed * 1.0f));
-				baseObj->Coord.y = LerpFloat(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac);
-				baseObj->Coord.z = LerpFloat(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac + (0.1f + gUserPhysics.carStats->speed * 1.0f));
+				baseObj->Coord.x = GAME_LERP(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac + (0.1f + gUserPhysics.carStats->speed * 1.0f));
+				baseObj->Coord.y = GAME_LERP(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac);
+				baseObj->Coord.z = GAME_LERP(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac + (0.1f + gUserPhysics.carStats->speed * 1.0f));
 			}
 			else{
-				baseObj->Coord.x = LerpFloat(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac / 2.0f);
-				baseObj->Coord.y = LerpFloat(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac / 2.0f);
-				baseObj->Coord.z = LerpFloat(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.x = GAME_LERP(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.y = GAME_LERP(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.z = GAME_LERP(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac / 2.0f);
 			}
 		}
 		else{
 			if(gPlayerInfo->lapNum >= 2){
-				baseObj->Coord.x = LerpFloat(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac / 2.0f);
-				baseObj->Coord.y = LerpFloat(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac / 2.0f);
-				baseObj->Coord.z = LerpFloat(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.x = GAME_LERP(baseObj->Coord.x, gPlayerInfo->coord.x,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.y = GAME_LERP(baseObj->Coord.y, gPlayerInfo->coord.y,gFramesPerSecondFrac / 2.0f);
+				baseObj->Coord.z = GAME_LERP(baseObj->Coord.z, gPlayerInfo->coord.z,gFramesPerSecondFrac / 2.0f);
 			}
 		}
 	}

@@ -67,6 +67,7 @@ enum
 
 #define	NUM_PRACTICE_TRACKS		9
 #define	NUM_BATTLE_TRACKS		8
+#define NUM_TOTAL_TRACKS		17
 
 /*********************/
 /*    VARIABLES      */
@@ -191,19 +192,28 @@ OGLSetupInputType	viewDef;
 
 			/* LOAD SPRITES */
 
-	switch(gGameMode)
-	{
-		case	GAME_MODE_PRACTICE:
-		case	GAME_MODE_MULTIPLAYERRACE:
-				gNumTracksInSelection = NUM_PRACTICE_TRACKS;
-				gBaseTrack = 0;
-				LoadSpriteGroup(SPRITE_GROUP_TRACKSELECTSCREEN, "trackselectsp", 0);
-				break;
-
-		default:
-				gNumTracksInSelection = NUM_BATTLE_TRACKS;
-				gBaseTrack = 9;
-				LoadSpriteGroup(SPRITE_GROUP_TRACKSELECTSCREEN, "trackselectmp", 0);
+	bool allowAllTracks = gGameModeIsForCPUs;
+	
+	// allows practice modes to extend all the way to battle-exclusive tracks
+	if(allowAllTracks){
+		gNumTracksInSelection = NUM_TOTAL_TRACKS;
+		gBaseTrack = 0;
+		LoadSpriteGroup(SPRITE_GROUP_TRACKSELECTSCREEN, "trackselectsp", 0);
+	}
+	else{
+		switch(gGameMode)
+		{
+			case	GAME_MODE_PRACTICE:
+			case	GAME_MODE_MULTIPLAYERRACE:
+					gNumTracksInSelection = NUM_PRACTICE_TRACKS;
+					gBaseTrack = 0;
+					LoadSpriteGroup(SPRITE_GROUP_TRACKSELECTSCREEN, "trackselectsp", 0);
+					break;
+			default:
+					gNumTracksInSelection = NUM_BATTLE_TRACKS;
+					gBaseTrack = 9;
+					LoadSpriteGroup(SPRITE_GROUP_TRACKSELECTSCREEN, "trackselectmp", 0);
+		}
 	}
 
 	LoadSpriteGroup(SPRITE_GROUP_MAINMENU, "menus", 0);
@@ -300,7 +310,12 @@ static void MakeTrackName(void)
 				break;
 
 		default:
+			if(gGameModeIsForCPUs){
+				gTrackName = TextMesh_New(Localize(STR_LEVEL_1 + gSelectedTrackIndex), kTextMeshAlignCenter, &def);
+			}
+			else{
 				gTrackName = TextMesh_New(Localize(STR_MPLEVEL_1 + gSelectedTrackIndex), kTextMeshAlignCenter, &def);
+			}
 	}
 
 

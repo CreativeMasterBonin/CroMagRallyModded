@@ -141,6 +141,20 @@ void ModifySpriteObjectFrame(ObjNode *theNode, short type)
 	theNode->Type = type;
 }
 
+/*********************** MODIFY SPRITE OBJECT COLOR ******************************/
+
+void ModifySpriteObjectFrameColor(ObjNode *theNode, float red, float green, float blue, float alpha)
+{
+	GAME_ASSERT(theNode->Genre == SPRITE_GENRE);
+	
+	if(theNode->ColorFilter.r != red || theNode->ColorFilter.g != green || theNode->ColorFilter.b != blue || theNode->ColorFilter.a != alpha){
+		theNode->ColorFilter.r = red;
+		theNode->ColorFilter.g = green;
+		theNode->ColorFilter.b = blue;
+		theNode->ColorFilter.a = alpha;
+	}
+}
+
 /************************** DRAW SPRITE ************************/
 
 void DrawSprite2(

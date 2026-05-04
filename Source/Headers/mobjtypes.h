@@ -53,8 +53,11 @@ enum
 
 	GLOBAL_ObjType_GreyRock,
 	GLOBAL_ObjType_RedRock,
-	GLOBAL_ObjType_IceRock
-
+	GLOBAL_ObjType_IceRock,
+	// these dont exist in maps
+	GLOBAL_ObjType_ZapperPOW,
+	GLOBAL_ObjType_WhirlwindPOW,
+	GLOBAL_ObjType_BeamPOW,
 };
 
 /******************* WEAPONS *************************/

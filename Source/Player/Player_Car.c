@@ -42,6 +42,7 @@ static void UpdateSuperSuspension(short p);
 static void UpdateInvisibility(short p);
 static void UpdateFrozenTimer(short p);
 static void UpdateFlaming(short p);
+static void UpdateBattleMode(short p);
 
 // define modded updaters
 static void UpdateZapPow(short p);
@@ -537,29 +538,54 @@ long	oldLeft,oldRight,oldFront,oldBack,oldTop,oldBottom;
     // starting boost logic
     
     // boosts are not wanted in other gamemodes
-    if(gGameMode == GAME_MODE_CAPTUREFLAG || gGameMode == GAME_MODE_TAG1 || gGameMode == GAME_MODE_TAG2 || gGameMode == GAME_MODE_SURVIVAL){
+    if(gGameMode == GAME_MODE_CAPTUREFLAG || gGameMode == GAME_MODE_TAG1 || gGameMode == GAME_MODE_TAG2 || gGameMode == GAME_MODE_SURVIVAL || gGameModeIsForCPUs){
         //
     }
     else{
-        if (gStartingLightTimer <= 2.0f && !(gStartingLightTimer <= 0.0f)){ // yellow, set light{
-            if(gPlayerInfo[gCurrentPlayerNum].isComputer == false){
-                if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_MAMMOTH){
-                    gPlayerInfo[gCurrentPlayerNum].nitroTimer = 30.0f;
-                }
-                else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_BONEBUGGY){
-                    gPlayerInfo[gCurrentPlayerNum].nitroTimer = 10.0f;
-                }
-                else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_GEODE){
-                    gPlayerInfo[gCurrentPlayerNum].nitroTimer = 20.0f;
-                }
-                else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_LOG){
-                    gPlayerInfo[gCurrentPlayerNum].nitroTimer = 5.0f;
-                }
-                else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_TURTLE){
-                    gPlayerInfo[gCurrentPlayerNum].nitroTimer = 15.0f;
-                }
-                //
-                if(gGamePrefs.difficulty == DIFFICULTY_HARD){
+        if (gStartingLightTimer <= 3.0f && !(gStartingLightTimer <= 0.0f)){ // yellow, set light
+			// speed boost at start of race IF on the gas
+			// when the 'GO!' sprite goes away, a speed boost can no longer be obtained
+            if(gPlayerInfo[gCurrentPlayerNum].isComputer == false && gPlayerInfo[gCurrentPlayerNum].gasPedalDown){
+				if(gUserTamperedWithPhysics){
+					gPlayerInfo[gCurrentPlayerNum].nitroTimer = 0.0f; // physics have been tampered with... NO BOOST!
+				}
+				else{
+					if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_MAMMOTH){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 5.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_BONEBUGGY){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 5.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_GEODE){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 5.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_LOG){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 5.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_TURTLE){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 5.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_ROCK){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 5.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_TROJANHORSE){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 4.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_OBELISK){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 4.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_CATAPULT){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 3.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_CHARIOT){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 3.0f;
+					}
+					else if(gPlayerInfo[gCurrentPlayerNum].vehicleType == CAR_TYPE_SUB){
+						gPlayerInfo[gCurrentPlayerNum].nitroTimer = 0.0f; // subs dont get boosts as they are already fast
+					}
+				}
+                // boost for inexperienced players or those who want an easier time playing the game
+                if(gGamePrefs.difficulty == DIFFICULTY_SIMPLISTIC){
                     if(gPlayerInfo[gCurrentPlayerNum].nitroTimer <= 0.0f){
                         gPlayerInfo[gCurrentPlayerNum].nitroTimer += 5.0f;
                         gPlayerInfo[gCurrentPlayerNum].nitroTimer *= 2;
@@ -1386,17 +1412,24 @@ float	fps = gFramesPerSecondFrac;
 	theNode->Speed3D = CalcVectorLength(&gDelta);
 
 
-			/* UPDATE POWERUP TIMERS */
+			/* UPDATE POWERUP TIMERS (and effects) */
 
+	// update nitro pow effects
 	UpdateNitro(p);
+	// update sticky tires pow effects
 	UpdateStickyTires(p);
+	// update super suspension pow effects
 	UpdateSuperSuspension(p);
+	// update invisibility pow effects
 	UpdateInvisibility(p);
+	// update frozen pow effects
 	UpdateFrozenTimer(p);
+	// update flaming pow effects
 	UpdateFlaming(p);
-    //
+    // update zapper pow effects
     UpdateZapPow(p);
-    //
+    // update battle mode effects and logic
+	UpdateBattleMode(p);
 
 	gPlayerInfo[p].bumpSoundTimer -=  fps;
 
@@ -1459,7 +1492,7 @@ float	fps = gFramesPerSecondFrac;
     
     // ?
     // cheat for CPUs to make them more unpredictable, and perhaps fun?
-    if(gPlayerInfo[p].isComputer){
+    if(gPlayerInfo[p].isComputer && !gGameModeIsForCPUs){
         if(RandomRange(1,1200) == 5){
             if (gPlayerInfo[p].stickyTiresTimer <= 0.0f){
                 gPlayerInfo[p].stickyTiresTimer = RandomRange(7,20) * 1.0f;
@@ -1669,6 +1702,43 @@ static void UpdateFrozenTimer(short p)
 			obj = obj->ChainNode;
 		}
 
+	}
+}
+
+/*** UPDATE BATTLE MODE VALUES ***/
+static void UpdateBattleMode(short p)
+{
+	if(gGameModeIsForCPUs && gGameMode == GAME_MODE_SURVIVAL){
+		// heal up as cpus really like crashing into the player
+		// cannot idle to heal
+		if(!gPlayerInfo[p].isComputer){
+			if(gPlayerInfo[p].braking && gPlayerInfo[p].health < 1.0f){
+				gPlayerInfo[p].health += 0.001f;
+			}
+		}
+		else{
+			// what is the distance to the special point?
+			//printf("%.4f\n",CalcDistance(gPlayerInfo[p].coord.x, gPlayerInfo[p].coord.z,109730.0f,9214.0f));
+			// special cases for cpus as they cannot see in battle mode very well
+			if(gTrackNum == TRACK_NUM_AZTEC){
+				// compensate for the strange dip trap in the aztec track (was this some kind of oversight for multiplayer?)
+				if(CalcDistance(gPlayerInfo[p].coord.x, gPlayerInfo[p].coord.z,108853.0000f,5101.0000f) < 10000.00000f){
+					gPlayerInfo[p].reverseTimer = 20.0f;
+					gPlayerInfo[p].analogSteering.x = 1.0f;
+				}
+			}
+			if(gPlayerInfo[p].isEliminated){
+				// a sort of "Oh no, i lost... oh well" animation-like sequence
+				gPlayerInfo[p].objNode->DeltaRot.y = GAME_LERP(gPlayerInfo[p].objNode->DeltaRot.y,gPlayerInfo[p].objNode->DeltaRot.y + 15.0f,0.001f);
+			}
+			else{
+				if(!gPlayerInfo[p].isEliminated && gPlayerInfo[p].health <= 0.0f){
+					gPlayerInfo[p].isEliminated = true;
+					gPlayerInfo[p].flamingTimer = 30.0f;
+					gPlayerInfo[p].invisibilityTimer = 300.0f;
+				}
+			}
+		}
 	}
 }
 
@@ -2430,31 +2500,115 @@ Boolean			onWater;
 			{
 			    float       cross,r;
 			    OGLVector2D aimVec;
+				
+				r = theNode->Rot.y;												// get aim vector of car
+				aimVec.x = -sin(r);
+				aimVec.y = -cos(r);
+				cross = OGLVector2D_Cross(&pathVec, &aimVec);       			// the sign of the cross product will tell us which way to turn
+				dot = OGLVector2D_Dot(&pathVec, &aimVec);          				// also get dot product
+				pathVarianceAngle = acos(dot);                     				// convert dot to angle
 
-			    r = theNode->Rot.y;												// get aim vector of car
-			    aimVec.x = -sin(r);
-			    aimVec.y = -cos(r);
-	            cross = OGLVector2D_Cross(&pathVec, &aimVec);       			// the sign of the cross product will tell us which way to turn
-	            dot = OGLVector2D_Dot(&pathVec, &aimVec);          				// also get dot product
-	    		pathVarianceAngle = acos(dot);                     				// convert dot to angle
-
-	    		if (gPlayerInfo[player].reverseTimer > 0.0f)					// if reversing then change steering
-	    			cross = -cross;
-
-	    		if (pathVarianceAngle > (PI/14))								// see if outside of tolerance
+				if (gPlayerInfo[player].reverseTimer > 0.0f)					// if reversing then change steering
+					cross = -cross;
+				
+				if (pathVarianceAngle > (PI/14))								// see if outside of tolerance
 				{
 					if (cross > 0.0f)
 						gPlayerInfo[player].analogSteering.x = -1.0f; // was just -1.0f
 					else
-                        gPlayerInfo[player].analogSteering.x = 1.0f; // was just 1.0f
+						gPlayerInfo[player].analogSteering.x = 1.0f; // was just 1.0f
 				}
+				
+				/*float randomizer2 = 1.0f + RandomFloat() * 100.0f;
+				
+				float distanceFromHumanPlayer = CalcQuickDistance(gPlayerInfo[0].coord.x, gPlayerInfo[0].coord.z,theNode->Coord.x,theNode->Coord.z);
+				bool humanPlayer = !gPlayerInfo[0].isComputer;*/
+				
+				// BROKEN CODE
+				/**if(gGameModeIsForCPUs && gameModeIsBattleMode && randomizer2 >= 200.2f){
+					if(humanPlayer && distanceFromHumanPlayer < 320.0f){
+						if(distanceFromHumanPlayer < 200.0f && distanceFromHumanPlayer > 20.0f){
+							brake = true;
+							giveGas = false;
+						}
+						else{
+							if(brake){
+								brake = false;
+							}
+						}
+						if(gPlayerInfo[0].coord.x > theNode->Coord.x || gPlayerInfo[0].coord.x < theNode->Coord.x || gPlayerInfo[0].coord.z >
+							theNode->Coord.z || gPlayerInfo[0].coord.z < theNode->Coord.z){
+							brake = false;
+							if(randomizer2 <= 50.0f){
+								gPlayerInfo[player].analogSteering.x = -1.0f;
+							}
+							else{
+								gPlayerInfo[player].analogSteering.x = 1.0f;
+							}
+						}
+						else{
+							brake = false;
+							gPlayerInfo[player].analogSteering.x = 0.0f;
+						}
+					}
+					else if(humanPlayer && distanceFromHumanPlayer >= 320.0f && distanceFromHumanPlayer < 720.0f){
+						brake = false;
+						if(randomizer2 <= 50.0f){
+							gPlayerInfo[player].analogSteering.x = -1.0f;
+						}
+						else{
+							gPlayerInfo[player].analogSteering.x = 1.0f;
+						}
+						giveGas = true;
+					}
+					else if(humanPlayer && distanceFromHumanPlayer > 720.0f){
+						brake = false;
+						if(gPlayerInfo[player].distToNextCheckpoint <= 320.0f){
+							
+						}
+						else{
+							gPlayerInfo[player].reverseTimer = 3.0f;
+						}
+					}
+				}
+				else{
+					for(int p2 = 0; p2 < MAX_PLAYERS; p2++){
+						if(!gPlayerInfo[p2].isComputer && randomizer2 <= 2.0f){
+							if(CalcDistance(theNode->Coord.x,theNode->Coord.z,gPlayerInfo[p2].coord.x,gPlayerInfo[p2].coord.z) > 500){
+								float clampedValue = -10.0f + RandomFloat() * 10.0f;
+								gPlayerInfo[player].analogSteering.x = GAME_CLAMP(clampedValue,-1.0,1.0);
+								giveGas = true;
+							}
+							else{
+								gPlayerInfo[player].analogSteering.x = 0.0f;
+							}
+						}
+					}
+				}**/
 			}
-			else
-			{
-				// mod: add some variation when the path isn't found
-				pathVec.x = -2.0f + RandomFloat() * 2.0f;													// no path found, so set default values
-				pathVec.y = -4.0f + RandomFloat2() * 4.0f;
-				pathVarianceAngle = 0;
+			else{
+				float yRot = gPlayerInfo[player].objNode->Rot.y;
+				float newYRot = yRot;
+				
+				if(CalcDistance(gPlayerInfo[player].coord.x, gPlayerInfo[player].coord.z, gPlayerInfo[0].coord.x, gPlayerInfo[0].coord.z) < 75.0f){
+					yRot = TurnObjectTowardTarget(theNode,&gCoord,gPlayerInfo[0].coord.x - 20,gPlayerInfo[0].coord.z - 20,1,false);
+					newYRot = GAME_LERP(gPlayerInfo[player].objNode->Rot.y,yRot,0.0015f);
+				}
+				else if(CalcDistance(gPlayerInfo[player].coord.x, gPlayerInfo[player].coord.z, gPlayerInfo[0].coord.x, gPlayerInfo[0].coord.z) > 320.0f){
+					yRot = TurnObjectTowardTarget(theNode,&gCoord,gPlayerInfo[0].coord.x,gPlayerInfo[0].coord.z,1,false);
+					newYRot = GAME_LERP(gPlayerInfo[player].objNode->Rot.y,yRot,0.0015f);
+					// some MP courses have an oversight stuck zone, so reposition stuck players
+					if(gPlayerInfo[player].reverseTimer > 0.0f || (fabs(theNode->DeltaRot.y) > PI)){
+						gPlayerInfo[player].coord.x = gPlayerInfo[0].startX;
+						gPlayerInfo[player].coord.z = gPlayerInfo[0].startZ;
+					}
+				}
+				
+				gPlayerInfo[player].objNode->Rot.y = newYRot;
+				
+				pathVarianceAngle = newYRot / PI2;
+				gPlayerInfo[player].analogSteering.x = 0.0f;
+				gPlayerInfo[player].analogSteering.y = 0.0f;
 			}
 			gPlayerInfo[player].pathVec = pathVec;								// keep a copy
 
@@ -2937,6 +3091,7 @@ void CreateCarWheelsAndHead(ObjNode *theCar, short playerNum)
 short			i, carType, sex;
 ObjNode			*wheel,*link;
 
+	// NOTE: 8 players is currently working in demo, practice, and tournament mode, whether super sub/cpus are subs option is enabled
 	if (playerNum >= MAX_PLAYERS)
 		DoFatalAlert("CreateCarWheelsAndHead: playerNum >= MAX_PLAYERS");
 
@@ -2967,6 +3122,8 @@ ObjNode			*wheel,*link;
 			.scale		= theCar->Scale.x,
 			.player		= playerNum,			// set playernum in this obj
 		};
+		
+		
 		if (carType == CAR_TYPE_CHARIOT)
 			def.flags |= STATUS_BIT_CLIPALPHA;
         
@@ -3248,9 +3405,9 @@ float			fps = gFramesPerSecondFrac;
 			}
             gPlayerInfo[playerNum].zappedTimer = 10.0f;
         } // testing powerups even if items don't exist in the map
-		else if(GetKeyState(SDL_SCANCODE_PERIOD) && GetKeyState(SDL_SCANCODE_COMMA)){
-			gPlayerInfo[playerNum].powType = RandomRange(POW_TYPE_NONE + 1,POW_TYPE_STICKY_TIRES); // custom is not selectable right now
-			gPlayerInfo[playerNum].powQuantity = RandomRange(1,3);
+		else if(gDebugMode > 0 && (GetKeyState(SDL_SCANCODE_PERIOD) && GetKeyState(SDL_SCANCODE_COMMA))){
+			gPlayerInfo[playerNum].powType = POW_TYPE_BEAM; //RandomRange(POW_TYPE_NONE + 1,POW_TYPE_STICKY_TIRES); // custom is not selectable right now
+			gPlayerInfo[playerNum].powQuantity = RandomRange(1,10);
 			return;
 		}
     }
@@ -3289,6 +3446,7 @@ float			fps = gFramesPerSecondFrac;
 
 	if (gPlayerInfo[playerNum].nitroTimer > 0.0f)
 	{
+		gPlayerInfo[playerNum].accelBackwards = false; // no accel sideways cherry pick fix - 541ddf1
 		gPlayerInfo[playerNum].braking = false;
         if(!gPlayerInfo[playerNum].isComputer){
             gPlayerInfo[playerNum].gasPedalDown = true;
@@ -3307,7 +3465,7 @@ float			fps = gFramesPerSecondFrac;
 		gPlayerInfo[playerNum].braking = true; // was true
 		gPlayerInfo[playerNum].gasPedalDown = false; // was false
         
-        // added a bit of funny to ending a race
+		// ? what was this for again ?
         if(gPlayerInfo[playerNum].raceComplete){
             gPlayerInfo[playerNum].braking = true;
             gPlayerInfo[playerNum].gasPedalDown = false;

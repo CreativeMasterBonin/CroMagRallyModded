@@ -800,12 +800,13 @@ static const char*	levelModelFiles[NUM_TRACKS] =
 				/* LOAD AUDIO */
     
     // All tracks load
-    LoadSoundEffect(EFFECT_ZAP);
-
+	// NOTE: we cannot load too many sound effects as there is limited memory allocated for that
+    LoadSoundEffect(EFFECT_ZAP); // used for the 'atlantis boosters' and 'zapper weapon'
+	LoadSoundEffect(EFFECT_DUSTDEVIL); // used for 'dust devils' and 'whirlwinds'
+	
 	switch(gTrackNum)
 	{
 		case	TRACK_NUM_DESERT:
-				LoadSoundEffect(EFFECT_DUSTDEVIL);
 				break;
 
 		case	TRACK_NUM_JUNGLE:
@@ -830,7 +831,7 @@ static const char*	levelModelFiles[NUM_TRACKS] =
 
 		case	TRACK_NUM_ATLANTIS: // had LoadSoundEffect(EFFECT_ZAP);
 				LoadSoundEffect(EFFECT_TORPEDOFIRE);
-				LoadSoundEffect(EFFECT_HUM);
+				LoadSoundEffect(EFFECT_HUM); // this is loaded in normal levels somewhere instead of here
 				LoadSoundEffect(EFFECT_BUBBLES);
 				break;
 
@@ -839,20 +840,22 @@ static const char*	levelModelFiles[NUM_TRACKS] =
 				break;
 	}
 
-
+	// mod notes:
+	// bg3d can be made in old modeling software if the right tools are acquired
+	// bg3d can currently be exported to more usable forms, and is a rather interesting format
 			/* LOAD BG3D GEOMETRY */
 
-	FSMakeFSSpec(gDataSpec.vRefNum, gDataSpec.parID, ":Models:global.bg3d", &spec);
+	FSMakeFSSpec(gDataSpec.vRefNum, gDataSpec.parID, ":Models:global.bg3d", &spec); // file contains all globally used objects (LITERALLY EVERYTHING)
 	ImportBG3D(&spec, MODEL_GROUP_GLOBAL);
 
-	FSMakeFSSpec(gDataSpec.vRefNum, gDataSpec.parID, ":Models:carparts.bg3d", &spec);
+	FSMakeFSSpec(gDataSpec.vRefNum, gDataSpec.parID, ":Models:carparts.bg3d", &spec); // contains wheels and car bodies
 	ImportBG3D(&spec, MODEL_GROUP_CARPARTS);
 
-	FSMakeFSSpec(gDataSpec.vRefNum, gDataSpec.parID, ":Models:weapons.bg3d", &spec);
+	FSMakeFSSpec(gDataSpec.vRefNum, gDataSpec.parID, ":Models:weapons.bg3d", &spec); // contains all models used for weapons
 	ImportBG3D(&spec, MODEL_GROUP_WEAPONS);
 
 	FSMakeFSSpec(gDataSpec.vRefNum, gDataSpec.parID, levelModelFiles[gTrackNum], &spec);
-	ImportBG3D(&spec, MODEL_GROUP_LEVELSPECIFIC);
+	ImportBG3D(&spec, MODEL_GROUP_LEVELSPECIFIC); // this is terrain models and other decorative objects (terrain itself is a seperate system)
 
 
 			/* LOAD SKELETONS */
@@ -861,7 +864,7 @@ static const char*	levelModelFiles[NUM_TRACKS] =
 	LoadASkeleton(SKELETON_TYPE_PLAYER_FEMALE);
 
 	LoadASkeleton(SKELETON_TYPE_BIRDBOMB);
-
+	// load track specific skeletons for track specific models
 	switch(gTrackNum)
 	{
 		case	TRACK_NUM_DESERT:
@@ -949,7 +952,7 @@ void LoadPlayfield(FSSpec *specPtr)
 
 
 
-
+	
 				/***********************/
 				/* DO ADDITIONAL SETUP */
 				/***********************/
@@ -1020,10 +1023,10 @@ Ptr						tempBuffer16 = nil;
 	gTerrainTileWidth = (gTerrainTileWidth/SUPERTILE_SIZE)*SUPERTILE_SIZE;		// round size down to nearest supertile multiple
 	gTerrainTileDepth = (gTerrainTileDepth/SUPERTILE_SIZE)*SUPERTILE_SIZE;
     
-    
+    // dividing here makes all objects freak out and fail to appear
     gTerrainUnitWidth = gTerrainTileWidth*TERRAIN_POLYGON_SIZE;                    // calc world unit dimensions of terrain
     gTerrainUnitDepth = gTerrainTileDepth*TERRAIN_POLYGON_SIZE;
-    
+    // cannot add here as it causes a mismatch with a check for size
 	gNumSuperTilesDeep = gTerrainTileDepth/SUPERTILE_SIZE;						// calc size in supertiles
 	gNumSuperTilesWide = gTerrainTileWidth/SUPERTILE_SIZE;
 

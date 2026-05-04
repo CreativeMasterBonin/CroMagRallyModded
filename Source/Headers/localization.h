@@ -191,6 +191,7 @@ typedef enum LocStrID
 	STR_CPUS_USE_SUBS, // cpus can use subs in normal tracks
 	STR_DEBUG_MODE, // modded debug mode with many useful features
 	STR_MOD, // mod options title
+	STR_RANDOMIZED_ITEMS, // randomized items title
 	STR_PREFERRED_DISPLAY,
 	STR_DISPLAY,
 	STR_ANTIALIASING_CHANGE_WARNING,

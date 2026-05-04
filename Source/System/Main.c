@@ -70,6 +70,7 @@ Boolean				gTrackCompleted = false;
 float				gTrackCompletedCoolDownTimer = 0;
 
 int					gGameMode,gTheAge,gTrackNum;
+Boolean				gGameModeIsForCPUs = false; // set this to true if it should be for cpu play, otherwise, keep it false;
 
 
 			/* BATTLE MODE VARS */
@@ -166,6 +167,7 @@ void InitDefaultPrefs(void)
 	gGamePrefs.silenceAnnouncer 	= false; // unsilence the announcer for new settings
 	gGamePrefs.superSubMode			= false; // super sub mode is off by default
 	gGamePrefs.cpusAreSubs			= false; // cpus should not be subs normally
+	gGamePrefs.randomizedItems		= false; // items should not be randomized by default
 
 	memcpy(&gGamePrefs.bindings, kDefaultInputBindings, sizeof(kDefaultInputBindings));
 }
@@ -442,7 +444,14 @@ short	placeToWin,startStage;
 			if (gPlayerInfo[0].place <= placeToWin)									// if came in 1st place then tally tokens
 			{
 				TallyTokens();
-				objectiveCompleted = (gTotalTokens >= MAX_TOKENS);
+				// due to submarine changes (and lack of friendly-feeling gameplay) atlantis is easier on all modes, just collect a few tokens to win
+				if(gTrackNum == TRACK_NUM_ATLANTIS){
+					gTotalTokens = MAX_TOKENS;
+					objectiveCompleted = gPlayerInfo[0].numTokens >= 3;
+				}
+				else{
+					objectiveCompleted = (gTotalTokens >= MAX_TOKENS);
+				}
 			}
 
 					/* SEE IF DIDNT COME IN 1ST PLACE OR DIDNT GET ALL THE TOKENS */
@@ -850,6 +859,23 @@ ObjNode* bigArrowhead = NULL;
 				{
 						stageTimer = 4.0;										// reset stage timer
 
+					if(gTrackNum == TRACK_NUM_ATLANTIS){
+						if(gTotalTokens < MAX_TOKENS){
+							if (gPlayerInfo[0].numTokens >= 3)
+							{
+								PlayAnnouncerSound(EFFECT_GOODJOB, true, .3);
+								MakeTwitch(bigArrowhead, kTwitchPreset_GiantArrowheadSpin);
+							}
+							else
+								PlayAnnouncerSound(EFFECT_INCOMPLETE, true, .3);
+						}
+						else{
+							PlayAnnouncerSound(EFFECT_COMPLETED, true, .3);
+							MakeTwitch(bigArrowhead, kTwitchPreset_GiantArrowheadSpin);
+						}
+						break;
+					}
+					else{
 						if (gTotalTokens == MAX_TOKENS)
 						{
 							PlayAnnouncerSound(EFFECT_COMPLETED, true, .3);
@@ -857,6 +883,7 @@ ObjNode* bigArrowhead = NULL;
 						}
 						else
 							PlayAnnouncerSound(EFFECT_INCOMPLETE, true, .3);
+					}
 
 						break;
 				}
@@ -1033,7 +1060,7 @@ static void PlayArea(void)
 		{
 			if (!gPlayerInfo[0].raceComplete)
 			{
-				gPlayerInfo[0].cheated = true;
+				//gPlayerInfo[0].cheated = true;
 				PlayerCompletedRace(0);
 				gPlayerInfo[0].place = 0;
 				gPlayerInfo[0].raceComplete = true;

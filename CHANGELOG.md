@@ -1,3 +1,26 @@
+# Cro-Mag Rally Modded Changelog
+
+- **3.0.2 Wilder Update**
+    - NEW STUFF!
+   	 - 12 Player Support (by default, unchangeable right now)
+   	 - Support for Survival gamemode with cpus
+   	 - CPU Battle Mode: CPUs will chase the player while still remaining a bit clumsy but aware of surroundings
+   	 - Beam: Harness the power of Crete Statues
+   	 - Whirlwind: A moving nearly-invisible wind that packs a punch after some time
+         - Submarines can fly around like planes in normal tracks in a new special mode toggled by two settings (this mode is a fast-paced one, so be ready to go, go, go!)
+	 - Silence Announcer setting (off by default, as the developers intended)
+         - Randomized Items setting (enabled always in cpu battle mode, off on all other modes by default)
+	 - New object behavior on hard difficulty
+         - and other cool stuff!
+    - Player placement display now switches to a text display (it renders text, not sprites)
+    - Old powerups can now be obtained without in-world objects using arrowheads (non-tournament modes)
+    - Start of race boost requires gas pedal, and has been tweaked
+    - Tweaks and changes to almost all aspects of the game
+
+- ** 3.0.1+ Update **
+    - Randomization on CPUs
+    - Start of race boost based on car type
+
 # Cro-Mag Rally Changelog
 
 - **3.0.1 (February 7, 2024)**

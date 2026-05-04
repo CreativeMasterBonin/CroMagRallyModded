@@ -33,6 +33,7 @@ static void Infobar_MovePOWTimer(ObjNode* objNode);
 static void Infobar_DrawTagTimer(Byte whichPane);
 static void Infobar_MoveFlag(ObjNode* objNode);
 static void Infobar_DrawHealth(Byte whichPane);
+static void Infobar_MovePlaceXtra(ObjNode* objNode);
 
 static void MoveFinalPlace(ObjNode *theNode);
 static void MovePressAnyKey(ObjNode *theNode);
@@ -71,6 +72,7 @@ enum
 	ICON_TIMERINDEX,		// Health indicator
 	ICON_POWTIMER,			// Buff timers
 	ICON_FLAG,				// CTF torches collected
+	ICON_PLACE2,			// an extra slot for worse placements than 6th
 	NUM_INFOBAR_ICONTYPES
 };
 
@@ -123,6 +125,7 @@ static const IconPlacement gIconInfo[NUM_INFOBAR_ICONTYPES] =
 	[ICON_TIMERINDEX]	= { kAnchorTopRight,	-166,  36, 0.6f, 106 },
 	[ICON_POWTIMER]		= { kAnchorTopLeft,		  29, 144, 0.8f,   0 },
 	[ICON_FLAG]			= { kAnchorTopRight,	  19-6*36,  36, 0.5f,  32 },
+	[ICON_PLACE2]		= { kAnchorTopLeft,		  68,  48, 0.9f,   0 }, // for worse than 6th placements
 };
 
 static const struct
@@ -451,6 +454,18 @@ static const char*	maps[] =
 
 		bottomTextY -= 32;
 	}
+	else{
+		/*NewObjectDefinitionType def =
+		{
+			.coord		= {0, bottomTextY, 0},
+			.scale		= .3,
+			.slot		= PANEDIVIDER_SLOT+1,
+			.moveCall	= MovePressAnyKey,
+			.flags		= STATUS_BIT_OVERLAYPANE,
+		};
+		TextMesh_New("7", 0, &def);
+		bottomTextY = 0;*/
+	}
 
 
 			/* TAMPER WARNING MESSAGE */
@@ -506,6 +521,7 @@ static void Infobar_MakeIcon(uint8_t type, uint8_t flags)
 		[ICON_WEAPON_BATTLE]	= Infobar_MoveInventoryPOW,
 		[ICON_POWTIMER]			= Infobar_MovePOWTimer,
 		[ICON_FLAG]				= Infobar_MoveFlag,
+		[ICON_PLACE2]			= Infobar_MovePlaceXtra, // movement of placement extra sprite
 	};
 
 	uint8_t sub = flags & 0x7f;
@@ -614,6 +630,8 @@ static void MakeInfobar(void)
 		Infobar_MakeIcon(ICON_LAPTIMER, 0x80);
 		Infobar_MakeIcon(ICON_LAPTIMER, 0x81);
 		Infobar_MakeIcon(ICON_LAPTIMER, 0x82);
+		
+		Infobar_MakeIcon(ICON_PLACE2, 0x80);		// entire thing for placement
 	}
 
 	switch (gGameMode)
@@ -858,6 +876,63 @@ static int LocalizeOrdinalSprite(int place, int sex)
 	}
 }
 
+// the replacement for the sprite-based player system
+static void Infobar_MovePlaceXtra(ObjNode* node){
+	int playerNum = node->PlayerNum; // the number of the player being referenced
+	int place = gPlayerInfo[playerNum].place; // the placement number
+	int sex = gPlayerInfo[playerNum].sex; // localization accurate placement endings
+	
+	InfobarIconData* special = GetInfobarIconData(node);
+	
+	char buf[24]; // our buffer
+	int hash = (int)place;
+
+	if (special->displayedValue != hash)
+	{
+		if (hash <= 6)
+		{
+			switch(hash){
+				case 1:{
+					snprintf(buf, sizeof(buf), "%d%s",
+							 place + 1,
+							 "st");
+				}
+				case 2:{
+					snprintf(buf, sizeof(buf), "%d%s",
+							 place + 1,
+							 "nd");
+				}
+				case 3:{
+					snprintf(buf, sizeof(buf), "%d%s",
+							 place + 1,
+							 "rd");
+				}
+				default:{
+					snprintf(buf,sizeof(buf),"%d%s",
+							 place + 1,"th");
+				}
+			}
+		}
+		else
+		{
+			snprintf(buf, sizeof(buf), "%d%s",
+					 place + 1,
+					 "th");
+		}
+		TextMesh_Update(buf, kTextMeshAlignLeft, node);
+		
+		// wiggle the special lap counter
+		if (gCameraStartupTimer <= 0)					// only twitch once the race has started
+		{
+			bool gain = place < special->displayedValue;	// gain if rank--
+			MakeTwitch(node, gain ? kTwitchPreset_RankGain : kTwitchPreset_RankLoss);
+		}
+		special->displayedValue = place;
+	}
+	
+	Infobar_RepositionIcon(node);
+}
+
 static void Infobar_MovePlace(ObjNode* node)
 {
 	int playerNum = node->PlayerNum;
@@ -876,19 +951,31 @@ static void Infobar_MovePlace(ObjNode* node)
 
 		special->displayedValue = place;
 	}
+	
+	int place2 = INFOBAR_SObjType_Place1+place;
+	
+	if(place > 5){
+		place2 = INFOBAR_SObjType_PlaceE;
+	}
 
 	switch (GetInfobarIconData(node)->sub)
 	{
 		case 0:
-			ModifySpriteObjectFrame(node, INFOBAR_SObjType_Place1+place);
+			ModifySpriteObjectFrame(node, place2);
 			break;
-
-		case 1:
+		case 1: // not sure how to localize 7th+ places...
 			ModifySpriteObjectFrame(node, LocalizeOrdinalSprite(place, sex));
 			break;
 
 		default:
 			ModifySpriteObjectFrame(node, INFOBAR_SObjType_WrongWay);
+	}
+	
+	if(gNumTotalPlayers > 6){
+		ModifySpriteObjectFrameColor(node, 1.0f, 1.0f, 1.0f, 0.0f);
+	}
+	else{
+		ModifySpriteObjectFrameColor(node, 1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
 	Infobar_RepositionIcon(node);
@@ -1608,28 +1695,59 @@ float	timer,x,y, scale, spacing, dist;
 		/**********************************************/
 		/* ALSO DRAW TIME MARKER FOR CLOSEST OPPONENT */
 		/**********************************************/
-
-	p2 = FindClosestPlayerInFront(gPlayerInfo[p].objNode, 10000, false, &dist, .5);			// check directly ahead
-	if (p2 == -1)
-		p2 = FindClosestPlayer(gPlayerInfo[p].objNode, gPlayerInfo[p].coord.x, gPlayerInfo[p].coord.z, 20000, false, &dist);
-
-	if (p2 != -1)
-	{
+	
+	float totalHealth = 0;
+	
+	// draw health for total cpus in battle mode, otherwise normal behavior
+	if(gGameModeIsForCPUs){
 		x = GetIconX(whichPane, ICON_TIMERINDEX);
-		timer = gPlayerInfo[p2].health;
+		for(int healths = 0; healths < MAX_PLAYERS; healths++){
+			if(gPlayerInfo[healths].isComputer){
+				totalHealth += gPlayerInfo[healths].health;
+			}
+		}
+		//printf("totalhealth: %.2f\n",totalHealth);
+		totalHealth = GAME_CLAMP(totalHealth,0.0000f,100.0000f);
+		//printf("totalhealth: %.2f\n",totalHealth);
+		
+		timer = GAME_CONVERT_RANGE_TO_OTHER(totalHealth,0.0000f,100.0000f,0.0000f,1.0000f);
 		x += timer * spacing;
-
+		//printf("x: %.2f, timer: %.2f \n",x,timer);
 		gGlobalColorFilter.r = 1;							// tint
 		gGlobalColorFilter.g = 0;
 		gGlobalColorFilter.b = 0;
 		gGlobalTransparency = .35;
-
+		
 		DrawSprite(SPRITE_GROUP_INFOBAR, INFOBAR_SObjType_Marker, x, y, scale, INFOBAR_SPRITE_FLAGS);
 
 		gGlobalColorFilter.r =
 		gGlobalColorFilter.g =
 		gGlobalColorFilter.b =
 		gGlobalTransparency = 1;
+	}
+	else{
+		p2 = FindClosestPlayerInFront(gPlayerInfo[p].objNode, 10000, false, &dist, .5);			// check directly ahead
+		if (p2 == -1)
+			p2 = FindClosestPlayer(gPlayerInfo[p].objNode, gPlayerInfo[p].coord.x, gPlayerInfo[p].coord.z, 20000, false, &dist);
+
+		if (p2 != -1)
+		{
+			x = GetIconX(whichPane, ICON_TIMERINDEX);
+			timer = gPlayerInfo[p2].health;
+			x += timer * spacing;
+
+			gGlobalColorFilter.r = 1;							// tint
+			gGlobalColorFilter.g = 0;
+			gGlobalColorFilter.b = 0;
+			gGlobalTransparency = .35;
+
+			DrawSprite(SPRITE_GROUP_INFOBAR, INFOBAR_SObjType_Marker, x, y, scale, INFOBAR_SPRITE_FLAGS);
+
+			gGlobalColorFilter.r =
+			gGlobalColorFilter.g =
+			gGlobalColorFilter.b =
+			gGlobalTransparency = 1;
+		}
 	}
 
 }
@@ -1725,6 +1843,7 @@ short	sex;
 			/* HIDE MOST OF THE INFOBAR */
 
 	HideIconObjects(playerNum, ICON_PLACE);
+	HideIconObjects(playerNum, ICON_PLACE2); // placement xtra icon
 	HideIconObjects(playerNum, ICON_WRONGWAY);
 	HideIconObjects(playerNum, ICON_LAP);
 	HideIconObjects(playerNum, ICON_WEAPON_RACE);
@@ -1738,10 +1857,12 @@ short	sex;
 
 			/* MAKE NUMBER SPRITE */
 
+	int objPlaceType = INFOBAR_SObjType_Place1+place;
+	
 	NewObjectDefinitionType spriteDef =
 	{
 		.group 		= SPRITE_GROUP_INFOBAR,
-		.type		= INFOBAR_SObjType_Place1+place,
+		.type		= objPlaceType,
 		.coord		= {0,0,0},
 		.flags		= STATUS_BIT_ONLYSHOWTHISPLAYER,
 		.slot		= SPRITE_SLOT,

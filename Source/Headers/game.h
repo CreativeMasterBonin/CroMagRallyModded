@@ -90,6 +90,7 @@ extern int						gCurrentAntialiasingLevel;
 extern int						gCurrentSplitScreenPane;
 extern int						gLoadTextureFlags;
 extern int						gGameMode;
+extern Boolean					gGameModeIsForCPUs;
 extern int						gGameWindowHeight;
 extern int						gGameWindowWidth;
 extern int						gNumObjectNodes;

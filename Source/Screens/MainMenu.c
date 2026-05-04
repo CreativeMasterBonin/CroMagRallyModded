@@ -27,6 +27,7 @@ static void SetupMainMenuScreen(void);
 static void OnPickQuitApplication(const MenuItem* mi);
 static void OnPickCredits(const MenuItem* mi);
 static void OnConfirmPlayMenu(const MenuItem* mi);
+static void OnPickGameModeSpecial(const MenuItem* mi);
 static void OnPickGameMode(const MenuItem* mi);
 static void OnPickTournamentAge(const MenuItem* mi);
 static void OnPickHostOrJoin(const MenuItem* mi);
@@ -109,6 +110,7 @@ static const MenuItem gMainMenuTree[] =
 	{ .id='spgm' },
 	{kMIPick, STR_PRACTICE,		.callback=OnPickGameMode, .id=GAME_MODE_PRACTICE,			.next='EXIT' },
 	{kMIPick, STR_TOURNAMENT,	.callback=OnPickGameMode, .id=GAME_MODE_TOURNAMENT,			.next='tour' },
+	{kMIPick, STR_SURVIVAL,		.callback=OnPickGameModeSpecial, .id=GAME_MODE_SURVIVAL,			.next='EXIT' },
 
 	{ .id='tour' },
 	{kMILabel, .text=STR_TOURNAMENT_OBJECTIVE,		.getLayoutFlags=GetLayoutFlagsForTournamentObjective },
@@ -422,18 +424,26 @@ static void OnConfirmPlayMenu(const MenuItem* mi)
 	}
 }
 
+static void OnPickGameModeSpecial(const MenuItem* mi){
+	gGameModeIsForCPUs = true;
+	gGameMode = GAME_CLAMP(mi->id, 0, NUM_GAME_MODES);
+}
+
 static void OnPickGameMode(const MenuItem* mi)
 {
+	gGameModeIsForCPUs = false;
 	gGameMode = GAME_CLAMP(mi->id, 0, NUM_GAME_MODES);
 }
 
 static void OnPickTournamentAge(const MenuItem* mi)
 {
+	gGameModeIsForCPUs = false;
 	gTheAge = GAME_CLAMP(mi->id, 0, NUM_AGES-1);
 }
 
 static void OnPickHostOrJoin(const MenuItem* mi)
 {
+	gGameModeIsForCPUs = false;
 	switch (mi->text)
 	{
 		case STR_HOST_NET_GAME:

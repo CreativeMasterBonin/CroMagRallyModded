@@ -171,6 +171,11 @@ static void ReadBG3DHeader(short refNum)
 BG3DHeaderType	headerData;
 long			count;
 
+	// testing grabbing header information
+	/*for(int i = 0; i < 16; i++){
+		printf("BG3D Model HEADER[%u]: %u\n",i,headerData.headerString[i]);
+	}
+	printf("\nmaj: %u , min-bug: %u, noRelRev: %u, stage: %u\n",headerData.version.majorRev,headerData.version.minorAndBugRev,headerData.version.nonRelRev,headerData.version.stage);*/
 
 	count = sizeof(BG3DHeaderType);
 
