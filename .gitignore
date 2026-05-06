@@ -12,7 +12,7 @@ Makefile
 .git
 .github
 CroMagRally.app
-
+.idea
 # IDEs and OS-specific stuff
 .vs/
 .DS_Store

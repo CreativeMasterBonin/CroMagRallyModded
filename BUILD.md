@@ -1,6 +1,6 @@
 # How to build Cro-Mag Rally
 
-## The easy way: build.py (automated build script)
+## The easy way: build.py (automated build script) 
 
 `build.py` can produce a game executable from a fresh clone of the repo in a single command. It will work on macOS, Windows and Linux, provided that your system has Python 3, CMake, and an adequate C++ compiler.
 
